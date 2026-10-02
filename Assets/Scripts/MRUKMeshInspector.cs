@@ -16,6 +16,8 @@ public class MRUKVisualInspector : MonoBehaviour
 
     private readonly List<GameObject> visualizedAnchors = new();
 
+    private MRUKSelectableObject selectedObject;
+
     private void Start()
     {
         if (MRUK.Instance == null)
@@ -24,8 +26,6 @@ public class MRUKVisualInspector : MonoBehaviour
             return;
         }
 
-        // Important for MRUK 205:
-        // If the scene is already loaded, this callback can execute immediately.
         MRUK.Instance.RegisterSceneLoadedCallback(OnSceneLoaded);
     }
 
@@ -81,7 +81,17 @@ public class MRUKVisualInspector : MonoBehaviour
 
         visual.transform.SetParent(anchor.transform, false);
 
-        // Create a wireframe box.
+        MRUKSelectableObject selectable =
+            visual.AddComponent<MRUKSelectableObject>();
+
+        selectable.Initialize(anchor);
+
+        BoxCollider collider =
+            visual.AddComponent<BoxCollider>();
+
+        collider.center = bounds.center;
+        collider.size = bounds.size;
+
         LineRenderer[] lines = CreateBoundingBox(
             visual.transform,
             bounds
@@ -93,7 +103,9 @@ public class MRUKVisualInspector : MonoBehaviour
             line.endWidth = lineWidth;
 
             if (boundingBoxMaterial != null)
+            {
                 line.material = boundingBoxMaterial;
+            }
         }
 
         visualizedAnchors.Add(visual);
@@ -163,10 +175,35 @@ public class MRUKVisualInspector : MonoBehaviour
                 corners[edges[i][1]]
             );
 
+            if (boundingBoxMaterial != null)
+            {
+                line.material = boundingBoxMaterial;
+            }
+
             renderers[i] = line;
         }
 
         return renderers;
+    }
+
+    public void SelectObject(MRUKSelectableObject objectToSelect)
+    {
+        if (selectedObject != null)
+        {
+            selectedObject.Deselect();
+        }
+
+        selectedObject = objectToSelect;
+
+        if (selectedObject != null)
+        {
+            selectedObject.Select();
+
+            Debug.Log(
+                "Selected MRUK object: " +
+                selectedObject.Anchor.Label
+            );
+        }
     }
 
     private void ClearVisualization()
@@ -174,9 +211,12 @@ public class MRUKVisualInspector : MonoBehaviour
         foreach (GameObject obj in visualizedAnchors)
         {
             if (obj != null)
+            {
                 Destroy(obj);
+            }
         }
 
         visualizedAnchors.Clear();
+        selectedObject = null;
     }
 }
