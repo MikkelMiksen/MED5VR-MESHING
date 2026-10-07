@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   m_configObjects:
+    UnityEditor.XR.OpenXR.Features.SpatialEntities.SpatialEntitiesSettings: {fileID: 11400000, guid: 410df1793f25b5d4f90d292b7c22e654, type: 2}
+    com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: da5cc514fa810904fab09d80c5d31c92, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 990dab63f4310e943a0b6ef98bcdced1, type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: bb88001f10bfae44381b58a7849541e5, type: 2}

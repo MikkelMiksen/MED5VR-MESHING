@@ -116,6 +116,10 @@ MonoBehaviour:
   - {fileID: -1969377811235317888}
   - {fileID: 5603466553513077080}
   - {fileID: 6297948519202961397}
+  - {fileID: 1334083051710981157}
+  - {fileID: -3729240259483885951}
+  - {fileID: -162562869299853509}
+  - {fileID: 2823645446652978818}
   customLoaderName: 
   m_renderMode: 1
   m_latencyOptimization: 0
@@ -433,6 +437,28 @@ MonoBehaviour:
   featureIdInternal: com.unity.openxr.feature.extension.performance_settings
   openxrExtensionStrings: XR_EXT_performance_settings
   company: Unity
+  priority: 0
+  targetOpenXRApiVersion: 
+  required: 0
+  customRuntimeLoaderName: 
+--- !u!114 &-3729240259483885951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae7b0bf1afddaa545ab27f9fc712a9df, type: 3}
+  m_Name: SpatialPlaneFeature Android
+  m_EditorClassIdentifier: Unity.XR.SpatialEntities::UnityEngine.XR.OpenXR.Features.SpatialEntities.SpatialPlaneFeature
+  m_enabled: 0
+  nameUi: 'Spatial Entities: Planes'
+  version: 0.1.0
+  featureIdInternal: com.unity.openxr.feature.arfoundation-spatialentities-plane
+  openxrExtensionStrings: XR_EXT_future XR_EXT_spatial_entity XR_EXT_spatial_plane_tracking
+  company: Unity Technologies
   priority: 0
   targetOpenXRApiVersion: 
   required: 0
@@ -903,6 +929,29 @@ MonoBehaviour:
   targetOpenXRApiVersion: 
   required: 0
   customRuntimeLoaderName: 
+--- !u!114 &-162562869299853509
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4afd7bdf7cc41d79bd5c0f60cf8f47b, type: 3}
+  m_Name: SpatialAnchorFeature Android
+  m_EditorClassIdentifier: Unity.XR.SpatialEntities::UnityEngine.XR.OpenXR.Features.SpatialEntities.SpatialAnchorFeature
+  m_enabled: 0
+  nameUi: 'Spatial Entities: Anchors'
+  version: 0.1.0
+  featureIdInternal: com.unity.openxr.feature.arfoundation-spatialentities-anchor
+  openxrExtensionStrings: XR_EXT_future XR_EXT_spatial_entity XR_EXT_spatial_anchor XR_EXT_spatial_persistence XR_EXT_spatial_persistence_operations
+  company: Unity Technologies
+  priority: 0
+  targetOpenXRApiVersion: 
+  required: 0
+  customRuntimeLoaderName: 
+  m_AutomaticallyLoadSavedAnchors: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1010,6 +1059,29 @@ MonoBehaviour:
   targetOpenXRApiVersion: 1.1.45
   required: 0
   customRuntimeLoaderName: 
+--- !u!114 &333736768358773173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4afd7bdf7cc41d79bd5c0f60cf8f47b, type: 3}
+  m_Name: SpatialAnchorFeature Standalone
+  m_EditorClassIdentifier: Unity.XR.SpatialEntities::UnityEngine.XR.OpenXR.Features.SpatialEntities.SpatialAnchorFeature
+  m_enabled: 0
+  nameUi: 'Spatial Entities: Anchors'
+  version: 0.1.0
+  featureIdInternal: com.unity.openxr.feature.arfoundation-spatialentities-anchor
+  openxrExtensionStrings: XR_EXT_future XR_EXT_spatial_entity XR_EXT_spatial_anchor XR_EXT_spatial_persistence XR_EXT_spatial_persistence_operations
+  company: Unity Technologies
+  priority: 0
+  targetOpenXRApiVersion: 
+  required: 0
+  customRuntimeLoaderName: 
+  m_AutomaticallyLoadSavedAnchors: 0
 --- !u!114 &420935304006127379
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1109,6 +1181,28 @@ MonoBehaviour:
   targetOpenXRApiVersion: 1.1.45
   required: 0
   customRuntimeLoaderName: 
+--- !u!114 &1334083051710981157
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0730e4a9c9fc4562976058ba8593b519, type: 3}
+  m_Name: SpatialSetupFeature Android
+  m_EditorClassIdentifier: Unity.XR.SpatialEntities::UnityEngine.XR.OpenXR.Features.SpatialEntities.SpatialSetupFeature
+  m_enabled: 0
+  nameUi: 'Spatial Entities: Setup'
+  version: 0.1.0
+  featureIdInternal: com.unity.openxr.feature.arfoundation-spatialentities-setup
+  openxrExtensionStrings: XR_EXT_future XR_EXT_spatial_entity XR_EXT_spatial_persistence
+  company: Unity Technologies
+  priority: -2147483648
+  targetOpenXRApiVersion: 
+  required: 0
+  customRuntimeLoaderName: 
 --- !u!114 &1401593097432407282
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1199,6 +1293,76 @@ MonoBehaviour:
   targetOpenXRApiVersion: 
   required: 0
   customRuntimeLoaderName: 
+--- !u!114 &2812412196358083493
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0730e4a9c9fc4562976058ba8593b519, type: 3}
+  m_Name: SpatialSetupFeature Standalone
+  m_EditorClassIdentifier: Unity.XR.SpatialEntities::UnityEngine.XR.OpenXR.Features.SpatialEntities.SpatialSetupFeature
+  m_enabled: 0
+  nameUi: 'Spatial Entities: Setup'
+  version: 0.1.0
+  featureIdInternal: com.unity.openxr.feature.arfoundation-spatialentities-setup
+  openxrExtensionStrings: XR_EXT_future XR_EXT_spatial_entity XR_EXT_spatial_persistence
+  company: Unity Technologies
+  priority: -2147483648
+  targetOpenXRApiVersion: 
+  required: 0
+  customRuntimeLoaderName: 
+--- !u!114 &2823645446652978818
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10fdc09244104bfd9d3c5d5d53670e1b, type: 3}
+  m_Name: SpatialMarkerFeature Android
+  m_EditorClassIdentifier: Unity.XR.SpatialEntities::UnityEngine.XR.OpenXR.Features.SpatialEntities.SpatialMarkerFeature
+  m_enabled: 0
+  nameUi: 'Spatial Entities: Markers'
+  version: 0.1.0
+  featureIdInternal: com.unity.openxr.feature.arfoundation-spatialentities-marker
+  openxrExtensionStrings: XR_EXT_future XR_EXT_spatial_entity XR_EXT_spatial_marker_tracking
+  company: Unity Technologies
+  priority: 0
+  targetOpenXRApiVersion: 
+  required: 0
+  customRuntimeLoaderName: 
+  m_QRCodeConfigOptions:
+    m_MarkersName: QR Codes
+    m_EnableCapability: 1
+    m_EnableFixedSizeMarker: 0
+    m_FixedSizeMarkerSideLength: 0.1
+    m_EnableStaticMarker: 0
+  m_MicroQRCodeConfigOptions:
+    m_MarkersName: Micro QR Codes
+    m_EnableCapability: 0
+    m_EnableFixedSizeMarker: 0
+    m_FixedSizeMarkerSideLength: 0.1
+    m_EnableStaticMarker: 0
+  m_ArucoMarkerConfigOptions:
+    m_MarkersName: ArUco Markers
+    m_EnableCapability: 0
+    m_EnableFixedSizeMarker: 0
+    m_FixedSizeMarkerSideLength: 0.1
+    m_EnableStaticMarker: 0
+    m_ArucoMarkerDictionary: 1
+  m_AprilTagConfigOptions:
+    m_MarkersName: April Tags
+    m_EnableCapability: 0
+    m_EnableFixedSizeMarker: 0
+    m_FixedSizeMarkerSideLength: 0.1
+    m_EnableStaticMarker: 0
+    m_AprilTagDictionary: 1
 --- !u!114 &3186357162201263730
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1475,6 +1639,28 @@ MonoBehaviour:
   targetOpenXRApiVersion: 
   required: 0
   customRuntimeLoaderName: 
+--- !u!114 &6186412018701421590
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae7b0bf1afddaa545ab27f9fc712a9df, type: 3}
+  m_Name: SpatialPlaneFeature Standalone
+  m_EditorClassIdentifier: Unity.XR.SpatialEntities::UnityEngine.XR.OpenXR.Features.SpatialEntities.SpatialPlaneFeature
+  m_enabled: 0
+  nameUi: 'Spatial Entities: Planes'
+  version: 0.1.0
+  featureIdInternal: com.unity.openxr.feature.arfoundation-spatialentities-plane
+  openxrExtensionStrings: XR_EXT_future XR_EXT_spatial_entity XR_EXT_spatial_plane_tracking
+  company: Unity Technologies
+  priority: 0
+  targetOpenXRApiVersion: 
+  required: 0
+  customRuntimeLoaderName: 
 --- !u!114 &6191488800797674752
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1592,6 +1778,10 @@ MonoBehaviour:
   - {fileID: 8521021494518811619}
   - {fileID: -1859351998783126960}
   - {fileID: -2786652407815263617}
+  - {fileID: 2812412196358083493}
+  - {fileID: 6186412018701421590}
+  - {fileID: 333736768358773173}
+  - {fileID: 8981093827800975310}
   customLoaderName: 
   m_renderMode: 1
   m_latencyOptimization: 0
@@ -1933,6 +2123,54 @@ MonoBehaviour:
   targetOpenXRApiVersion: 1.1.45
   required: 0
   customRuntimeLoaderName: 
+--- !u!114 &8981093827800975310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10fdc09244104bfd9d3c5d5d53670e1b, type: 3}
+  m_Name: SpatialMarkerFeature Standalone
+  m_EditorClassIdentifier: Unity.XR.SpatialEntities::UnityEngine.XR.OpenXR.Features.SpatialEntities.SpatialMarkerFeature
+  m_enabled: 0
+  nameUi: 'Spatial Entities: Markers'
+  version: 0.1.0
+  featureIdInternal: com.unity.openxr.feature.arfoundation-spatialentities-marker
+  openxrExtensionStrings: XR_EXT_future XR_EXT_spatial_entity XR_EXT_spatial_marker_tracking
+  company: Unity Technologies
+  priority: 0
+  targetOpenXRApiVersion: 
+  required: 0
+  customRuntimeLoaderName: 
+  m_QRCodeConfigOptions:
+    m_MarkersName: QR Codes
+    m_EnableCapability: 1
+    m_EnableFixedSizeMarker: 0
+    m_FixedSizeMarkerSideLength: 0.1
+    m_EnableStaticMarker: 0
+  m_MicroQRCodeConfigOptions:
+    m_MarkersName: Micro QR Codes
+    m_EnableCapability: 0
+    m_EnableFixedSizeMarker: 0
+    m_FixedSizeMarkerSideLength: 0.1
+    m_EnableStaticMarker: 0
+  m_ArucoMarkerConfigOptions:
+    m_MarkersName: ArUco Markers
+    m_EnableCapability: 0
+    m_EnableFixedSizeMarker: 0
+    m_FixedSizeMarkerSideLength: 0.1
+    m_EnableStaticMarker: 0
+    m_ArucoMarkerDictionary: 1
+  m_AprilTagConfigOptions:
+    m_MarkersName: April Tags
+    m_EnableCapability: 0
+    m_EnableFixedSizeMarker: 0
+    m_FixedSizeMarkerSideLength: 0.1
+    m_EnableStaticMarker: 0
+    m_AprilTagDictionary: 1
 --- !u!114 &9202477439692448942
 MonoBehaviour:
   m_ObjectHideFlags: 0
