@@ -5,41 +5,67 @@ public class MRUKSelectableObject : MonoBehaviour
 {
     public MRUKAnchor Anchor { get; private set; }
 
-    private Renderer[] renderers;
-    private Color originalColor;
+    private LineRenderer[] lines;
     private bool selected = false;
 
     public void Initialize(MRUKAnchor anchor)
     {
         Anchor = anchor;
 
-        renderers = GetComponentsInChildren<Renderer>();
+        Debug.Log(
+            "Selectable MRUK object created: " +
+            anchor.Label
+        );
+    }
 
-        if (renderers.Length > 0)
-        {
-            originalColor = renderers[0].material.color;
-        }
+    // Called after the bounding box has been created.
+    public void SetupVisuals()
+    {
+        lines = GetComponentsInChildren<LineRenderer>();
+
+        Debug.Log(
+            "Found " + lines.Length +
+            " line renderers for " + Anchor.Label
+        );
     }
 
     public void Select()
     {
+        if (selected)
+            return;
+
         selected = true;
 
-        foreach (Renderer renderer in renderers)
-        {
-            renderer.material.color = Color.green;
-        }
+        SetColor(Color.green);
 
-        Debug.Log("Selected: " + Anchor.Label);
+        Debug.Log(
+            "SELECTED: " +
+            Anchor.Label
+        );
     }
 
     public void Deselect()
     {
+        if (!selected)
+            return;
+
         selected = false;
 
-        foreach (Renderer renderer in renderers)
+        SetColor(Color.white);
+    }
+
+    private void SetColor(Color color)
+    {
+        if (lines == null)
+            return;
+
+        foreach (LineRenderer line in lines)
         {
-            renderer.material.color = originalColor;
+            if (line != null)
+            {
+                line.startColor = color;
+                line.endColor = color;
+            }
         }
     }
 

@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Meta.XR.MRUtilityKit;
+using Oculus.Interaction;
+using Oculus.Interaction.Surfaces;
 
 public class MRUKVisualInspector : MonoBehaviour
 {
@@ -91,6 +93,16 @@ public class MRUKVisualInspector : MonoBehaviour
 
         collider.center = bounds.center;
         collider.size = bounds.size;
+
+        ColliderSurface colliderSurface =
+            visual.AddComponent<ColliderSurface>();
+
+        colliderSurface.InjectCollider(collider);
+
+        RayInteractable rayInteractable =
+            visual.AddComponent<RayInteractable>();
+
+        rayInteractable.InjectSurface(colliderSurface);
 
         LineRenderer[] lines = CreateBoundingBox(
             visual.transform,
