@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using Meta.XR.MRUtilityKit;
 
@@ -6,27 +7,23 @@ public class MRUKSelectableObject : MonoBehaviour
     public MRUKAnchor Anchor { get; private set; }
 
     private LineRenderer[] lines;
-    private bool selected = false;
+    private MRUKMeasurement measurement;
+    private bool selected;
 
-    public void Initialize(MRUKAnchor anchor)
+    private Color normalColor = Color.white;
+    private Color selectedColor = Color.green;
+
+    public void Initialize(MRUKAnchor anchor, Bounds bounds)
     {
         Anchor = anchor;
 
-        Debug.Log(
-            "Selectable MRUK object created: " +
-            anchor.Label
-        );
+        measurement = gameObject.AddComponent<MRUKMeasurement>();
+        measurement.Initialize(anchor, bounds);
     }
 
-    // Called after the bounding box has been created.
     public void SetupVisuals()
     {
         lines = GetComponentsInChildren<LineRenderer>();
-
-        Debug.Log(
-            "Found " + lines.Length +
-            " line renderers for " + Anchor.Label
-        );
     }
 
     public void Select()
@@ -35,13 +32,10 @@ public class MRUKSelectableObject : MonoBehaviour
             return;
 
         selected = true;
+        SetColor(selectedColor);
+        measurement?.Show();
 
-        SetColor(Color.green);
-
-        Debug.Log(
-            "SELECTED: " +
-            Anchor.Label
-        );
+        Debug.Log("Selected: " + Anchor.Label);
     }
 
     public void Deselect()
@@ -50,8 +44,8 @@ public class MRUKSelectableObject : MonoBehaviour
             return;
 
         selected = false;
-
-        SetColor(Color.white);
+        SetColor(normalColor);
+        measurement?.Hide();
     }
 
     private void SetColor(Color color)
@@ -61,11 +55,11 @@ public class MRUKSelectableObject : MonoBehaviour
 
         foreach (LineRenderer line in lines)
         {
-            if (line != null)
-            {
-                line.startColor = color;
-                line.endColor = color;
-            }
+            if (line == null)
+                continue;
+
+            line.startColor = color;
+            line.endColor = color;
         }
     }
 

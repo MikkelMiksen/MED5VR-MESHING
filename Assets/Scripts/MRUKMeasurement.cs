@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using Meta.XR.MRUtilityKit;
 
@@ -5,48 +6,38 @@ public class MRUKMeasurement : MonoBehaviour
 {
     private MRUKAnchor anchor;
     private Bounds bounds;
+    private GameObject labelObject;
 
-    public void Initialize(
-        MRUKAnchor anchor,
-        Bounds bounds)
+    public void Initialize(MRUKAnchor anchor, Bounds bounds)
     {
         this.anchor = anchor;
         this.bounds = bounds;
 
         CreateLabel();
+        Hide();
     }
 
     private void CreateLabel()
     {
-        GameObject labelObject =
-            new GameObject("MeasurementLabel");
+        labelObject = new GameObject("MeasurementLabel");
+        labelObject.transform.SetParent(transform, false);
 
-        labelObject.transform.SetParent(
-            transform,
-            false
+        // Position the label above the object's bounding box.
+        labelObject.transform.localPosition = new Vector3(
+            bounds.center.x,
+            bounds.max.y + 0.15f,
+            bounds.center.z
         );
 
-        // Put label slightly above the object.
-        labelObject.transform.localPosition =
-            new Vector3(
-                0,
-                bounds.extents.y + 0.1f,
-                0
-            );
-
-        TextMesh text =
-            labelObject.AddComponent<TextMesh>();
+        TextMesh text = labelObject.AddComponent<TextMesh>();
 
         text.text = BuildMeasurementText();
-
-        text.characterSize = 0.03f;
-        text.fontSize = 32;
+        text.characterSize = 0.01f;
+        text.fontSize = 64;
         text.anchor = TextAnchor.MiddleCenter;
-
-        // Make it readable from both sides.
         text.alignment = TextAlignment.Center;
+        text.color = Color.white;
 
-        // Billboard toward the camera.
         labelObject.AddComponent<Billboard>();
     }
 
@@ -54,10 +45,21 @@ public class MRUKMeasurement : MonoBehaviour
     {
         Vector3 size = bounds.size;
 
-        return
-            anchor.Label + "\n" +
-            $"W: {size.x:F2} m\n" +
-            $"H: {size.y:F2} m\n" +
-            $"D: {size.z:F2} m";
+        return anchor.Label + "\n" +
+               $"W: {size.x:F2} m\n" +
+               $"H: {size.y:F2} m\n" +
+               $"D: {size.z:F2} m";
+    }
+
+    public void Show()
+    {
+        if (labelObject != null)
+            labelObject.SetActive(true);
+    }
+
+    public void Hide()
+    {
+        if (labelObject != null)
+            labelObject.SetActive(false);
     }
 }

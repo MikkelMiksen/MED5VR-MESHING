@@ -86,7 +86,7 @@ public class MRUKVisualInspector : MonoBehaviour
         MRUKSelectableObject selectable =
             visual.AddComponent<MRUKSelectableObject>();
 
-        selectable.Initialize(anchor);
+        selectable.Initialize(anchor, bounds);
 
         BoxCollider collider =
             visual.AddComponent<BoxCollider>();
