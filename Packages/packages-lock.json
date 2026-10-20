@@ -1,11 +1,11 @@
 {
   "dependencies": {
     "com.meta.xr.mrutilitykit": {
-      "version": "205.0.0",
+      "version": "207.0.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.meta.xr.sdk.core": "205.0.0",
+        "com.meta.xr.sdk.core": "207.0.1",
         "com.unity.textmeshpro": "3.0.6",
         "com.unity.ai.navigation": "1.1.4",
         "com.unity.nuget.newtonsoft-json": "3.0.2"
@@ -13,7 +13,7 @@
       "url": "https://packages.unity.com"
     },
     "com.meta.xr.sdk.core": {
-      "version": "205.0.0",
+      "version": "207.0.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -28,7 +28,7 @@
       "url": "https://packages.unity.com"
     },
     "com.meta.xr.sdk.interaction": {
-      "version": "205.0.0",
+      "version": "207.0.1",
       "depth": 1,
       "source": "registry",
       "dependencies": {
@@ -38,17 +38,17 @@
       "url": "https://packages.unity.com"
     },
     "com.meta.xr.sdk.interaction.ovr": {
-      "version": "205.0.0",
+      "version": "207.0.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.meta.xr.sdk.core": "205.0.0",
-        "com.meta.xr.sdk.interaction": "205.0.0"
+        "com.meta.xr.sdk.core": "207.0.1",
+        "com.meta.xr.sdk.interaction": "207.0.1"
       },
       "url": "https://packages.unity.com"
     },
     "com.meta.xr.sdk.platform": {
-      "version": "205.0.0",
+      "version": "207.0.0",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -113,7 +113,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.visualstudio": {
-      "version": "2.0.26",
+      "version": "2.0.28",
       "depth": 0,
       "source": "registry",
       "dependencies": {
