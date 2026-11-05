@@ -58,7 +58,7 @@ public class ClayCubeDesktop : MonoBehaviour
 
     void Awake()
     {
-        cam = Camera.main;
+        cam = FindCamera();
         BuildWeldedCube(out var vList, out var tList);
 
         verts = new NativeArray<float3>(vList.Count, Allocator.Persistent);
@@ -100,6 +100,24 @@ public class ClayCubeDesktop : MonoBehaviour
         depth = cam != null
             ? Vector3.Distance(cam.transform.position, transform.position) - size * 0.6f
             : 0.3f;
+    }
+
+    static Camera FindCamera()
+    {
+        // Camera.main is null if the camera isn't tagged "MainCamera".
+        var c = Camera.main;
+        if (c == null) c = FindFirstObjectByType<Camera>();
+        if (c == null) Debug.LogWarning("ClayCubeDesktop: no Camera found in the scene.");
+        return c;
+    }
+
+    void OnGUI()
+    {
+        // Debug readout so you can see what the script thinks is happening.
+        var input = ReadInput();
+        string camName = cam != null ? cam.name : "NONE";
+        GUI.Label(new Rect(10, 10, 700, 25),
+            $"cam: {camName} | mouse: {input.mouse} | depth: {depth:F3} | L:{input.left} R:{input.right}");
     }
 
     static Material MakeMaterial(Color c)
@@ -168,7 +186,7 @@ public class ClayCubeDesktop : MonoBehaviour
     static InputState ReadInput()
     {
         var s = new InputState();
-#if ENABLE_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
         var m = Mouse.current;
         var k = Keyboard.current;
         if (m != null)
@@ -200,6 +218,7 @@ public class ClayCubeDesktop : MonoBehaviour
 
     void Update()
     {
+        if (cam == null) cam = FindCamera();
         if (cam == null) return;
         var input = ReadInput();
 
