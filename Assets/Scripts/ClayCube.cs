@@ -7,15 +7,17 @@ using UnityEngine;
 
 /// <summary>
 /// Hand-sculptable clay cube for Meta Quest 3 (standalone, passthrough).
-/// Requires: Meta XR Core SDK, OVRCameraRig with OVRHand/OVRSkeleton on both hands,
+/// Requires: Meta XR Core SDK, OVRCameraRig with OVRSkeleton on both hands,
 /// Burst, Collections, Mathematics.
 ///
 /// Attach to an empty GameObject with MeshFilter + MeshRenderer (URP Lit material).
-/// Drag the left/right OVRSkeleton components (from OVRLeftHandVisual / OVRRightHandVisual
-/// or the OVRHandPrefab skeletons under the rig) into the fields below.
+/// Drag the left/right OVRSkeleton components into the fields below.
 ///
-/// - Fingertips + wrist act as small spheres that push the surface (dents).
-/// - Pinching (thumb + index) grabs the clay near the pinch point and drags it (pull/stretch).
+/// The whole hand (every finger segment + palm) is modelled as capsules that push the clay
+/// out of their way. Vertices are only displaced while a capsule is inside them, so pulling
+/// a finger back leaves the dent behind and nothing follows the hand.
+///
+/// Optional: enablePinchGrab lets a thumb+index pinch drag the clay (off by default).
 /// </summary>
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class ClayCube : MonoBehaviour
@@ -30,24 +32,60 @@ public class ClayCube : MonoBehaviour
     public OVRSkeleton leftSkeleton;
     public OVRSkeleton rightSkeleton;
 
-    [Header("Poke (dents)")]
-    public float fingerRadius = 0.010f;
-    public float palmRadius = 0.030f;
+    [Header("Hand collision (meters)")]
+    [Tooltip("Radius of the capsules along each finger segment.")]
+    public float fingerRadius = 0.009f;
+    [Tooltip("Radius of the capsules that make up the palm.")]
+    public float palmRadius = 0.015f;
 
-    [Header("Pinch grab (pull / stretch)")]
+    [Header("Pinch grab (optional)")]
+    [Tooltip("Off by default: a pinch can latch onto the clay when you retract your fingers.")]
+    public bool enablePinchGrab = false;
     public float grabRadius = 0.04f;
-    [Tooltip("Pinch starts when thumb-index tip distance (m) drops below this.")]
     public float pinchOn = 0.020f;
-    [Tooltip("Pinch ends when distance rises above this (hysteresis).")]
     public float pinchOff = 0.035f;
+
+    // ---- hand model: bone chains for fingers, links for the palm
+    static readonly OVRSkeleton.BoneId[][] fingerChains =
+    {
+        new[] { OVRSkeleton.BoneId.Hand_Thumb1,  OVRSkeleton.BoneId.Hand_Thumb2,  OVRSkeleton.BoneId.Hand_Thumb3,  OVRSkeleton.BoneId.Hand_ThumbTip },
+        new[] { OVRSkeleton.BoneId.Hand_Index1,  OVRSkeleton.BoneId.Hand_Index2,  OVRSkeleton.BoneId.Hand_Index3,  OVRSkeleton.BoneId.Hand_IndexTip },
+        new[] { OVRSkeleton.BoneId.Hand_Middle1, OVRSkeleton.BoneId.Hand_Middle2, OVRSkeleton.BoneId.Hand_Middle3, OVRSkeleton.BoneId.Hand_MiddleTip },
+        new[] { OVRSkeleton.BoneId.Hand_Ring1,   OVRSkeleton.BoneId.Hand_Ring2,   OVRSkeleton.BoneId.Hand_Ring3,   OVRSkeleton.BoneId.Hand_RingTip },
+        new[] { OVRSkeleton.BoneId.Hand_Pinky1,  OVRSkeleton.BoneId.Hand_Pinky2,  OVRSkeleton.BoneId.Hand_Pinky3,  OVRSkeleton.BoneId.Hand_PinkyTip },
+    };
+
+    // Wrist fans out to each knuckle, plus a line across the knuckles.
+    static readonly OVRSkeleton.BoneId[,] palmLinks =
+    {
+        { OVRSkeleton.BoneId.Hand_WristRoot, OVRSkeleton.BoneId.Hand_Thumb1 },
+        { OVRSkeleton.BoneId.Hand_WristRoot, OVRSkeleton.BoneId.Hand_Index1 },
+        { OVRSkeleton.BoneId.Hand_WristRoot, OVRSkeleton.BoneId.Hand_Middle1 },
+        { OVRSkeleton.BoneId.Hand_WristRoot, OVRSkeleton.BoneId.Hand_Ring1 },
+        { OVRSkeleton.BoneId.Hand_WristRoot, OVRSkeleton.BoneId.Hand_Pinky1 },
+        { OVRSkeleton.BoneId.Hand_Index1,    OVRSkeleton.BoneId.Hand_Middle1 },
+        { OVRSkeleton.BoneId.Hand_Middle1,   OVRSkeleton.BoneId.Hand_Ring1 },
+        { OVRSkeleton.BoneId.Hand_Ring1,     OVRSkeleton.BoneId.Hand_Pinky1 },
+    };
+
+    struct Capsule
+    {
+        public float3 a;
+        public float3 b;
+        public float r;
+    }
 
     Mesh mesh;
     NativeArray<float3> verts, normals;
     NativeArray<int> tris;
-    NativeArray<float4> tips;      // xyz = local position, w = local radius
-    int tipCount;
+    NativeArray<Capsule> capsules;
+    int capsuleCount;
     JobHandle handle;
     bool pending;
+
+    // per-frame scratch for bone lookup (indexed by (int)BoneId)
+    readonly Vector3[] bonePos = new Vector3[40];
+    readonly bool[] boneHave = new bool[40];
 
     class GrabState
     {
@@ -55,8 +93,8 @@ public class ClayCube : MonoBehaviour
         public float3 last;
         public NativeArray<float> weights;
     }
-    GrabState grabLeft = new GrabState();
-    GrabState grabRight = new GrabState();
+    readonly GrabState grabLeft = new GrabState();
+    readonly GrabState grabRight = new GrabState();
 
     // ------------------------------------------------------------------ setup
 
@@ -67,7 +105,7 @@ public class ClayCube : MonoBehaviour
         verts = new NativeArray<float3>(vList.Count, Allocator.Persistent);
         normals = new NativeArray<float3>(vList.Count, Allocator.Persistent);
         tris = new NativeArray<int>(tList.ToArray(), Allocator.Persistent);
-        tips = new NativeArray<float4>(16, Allocator.Persistent);
+        capsules = new NativeArray<Capsule>(64, Allocator.Persistent);
         grabLeft.weights = new NativeArray<float>(vList.Count, Allocator.Persistent);
         grabRight.weights = new NativeArray<float>(vList.Count, Allocator.Persistent);
 
@@ -131,20 +169,19 @@ public class ClayCube : MonoBehaviour
 
     void Update()
     {
-        tipCount = 0;
+        capsuleCount = 0;
         JobHandle dep = default;
 
         dep = ProcessHand(rightSkeleton, grabRight, dep);
         dep = ProcessHand(leftSkeleton, grabLeft, dep);
 
-        // Nothing tracked and nothing grabbed -> nothing to do.
-        if (tipCount == 0 && !grabLeft.active && !grabRight.active)
+        if (capsuleCount == 0 && !grabLeft.active && !grabRight.active)
         {
             dep.Complete();
             return;
         }
 
-        var poke = new PokeJob { verts = verts, tips = tips, tipCount = tipCount };
+        var poke = new PokeJob { verts = verts, capsules = capsules, capsuleCount = capsuleCount };
         var norm = new NormalsJob { verts = verts, tris = tris, normals = normals };
         dep = poke.Schedule(verts.Length, 256, dep);
         handle = norm.Schedule(dep);
@@ -159,33 +196,78 @@ public class ClayCube : MonoBehaviour
             return dep;
         }
 
+        // Cache bone world positions by id.
+        System.Array.Clear(boneHave, 0, boneHave.Length);
         var bones = skel.Bones;
-        float scale = transform.lossyScale.x;
-
-        Transform thumbTip = null, indexTip = null;
         for (int i = 0; i < bones.Count; i++)
         {
-            var id = bones[i].Id;
-            if (id == OVRSkeleton.BoneId.Hand_ThumbTip) thumbTip = bones[i].Transform;
-            else if (id == OVRSkeleton.BoneId.Hand_IndexTip) indexTip = bones[i].Transform;
+            int idx = (int)bones[i].Id;
+            if (idx >= 0 && idx < boneHave.Length)
+            {
+                bonePos[idx] = bones[i].Transform.position;
+                boneHave[idx] = true;
+            }
         }
 
-        // ---- pinch state (with hysteresis)
-        bool pinchingNow = false;
-        float3 pinchLocal = float3.zero;
-        if (thumbTip != null && indexTip != null)
-        {
-            float d = Vector3.Distance(thumbTip.position, indexTip.position);
-            if (!grab.active && d < pinchOn) pinchingNow = true;
-            else if (grab.active && d < pinchOff) pinchingNow = true;
+        float scale = transform.lossyScale.x;
 
-            Vector3 mid = (thumbTip.position + indexTip.position) * 0.5f;
-            pinchLocal = transform.InverseTransformPoint(mid);
+        // ---- optional pinch grab
+        if (enablePinchGrab)
+        {
+            dep = HandlePinch(grab, dep, scale);
+        }
+        else
+        {
+            grab.active = false;
         }
 
-        if (pinchingNow && !grab.active)
+        // ---- finger capsules (skip thumb + index while a pinch grab is active)
+        for (int f = 0; f < fingerChains.Length; f++)
         {
-            // Grab begins: compute per-vertex weights around the pinch point.
+            if (grab.active && f <= 1) continue;
+            var chain = fingerChains[f];
+            for (int k = 0; k < chain.Length - 1; k++)
+                AddCapsule(chain[k], chain[k + 1], fingerRadius, scale);
+        }
+
+        // ---- palm capsules
+        for (int p = 0; p < palmLinks.GetLength(0); p++)
+        {
+            float r = p >= 5 ? fingerRadius : palmRadius; // knuckle line is thinner
+            AddCapsule(palmLinks[p, 0], palmLinks[p, 1], r, scale);
+        }
+
+        return dep;
+    }
+
+    void AddCapsule(OVRSkeleton.BoneId a, OVRSkeleton.BoneId b, float radiusWorld, float scale)
+    {
+        int ia = (int)a, ib = (int)b;
+        if (ia >= boneHave.Length || ib >= boneHave.Length) return;
+        if (!boneHave[ia] || !boneHave[ib]) return;
+        if (capsuleCount >= capsules.Length) return;
+
+        Vector3 la = transform.InverseTransformPoint(bonePos[ia]);
+        Vector3 lb = transform.InverseTransformPoint(bonePos[ib]);
+        capsules[capsuleCount++] = new Capsule { a = la, b = lb, r = radiusWorld / scale };
+    }
+
+    JobHandle HandlePinch(GrabState grab, JobHandle dep, float scale)
+    {
+        int it = (int)OVRSkeleton.BoneId.Hand_IndexTip;
+        int tt = (int)OVRSkeleton.BoneId.Hand_ThumbTip;
+        if (!boneHave[it] || !boneHave[tt])
+        {
+            grab.active = false;
+            return dep;
+        }
+
+        float d = Vector3.Distance(bonePos[it], bonePos[tt]);
+        bool pinching = grab.active ? d < pinchOff : d < pinchOn;
+        float3 pinchLocal = transform.InverseTransformPoint((bonePos[it] + bonePos[tt]) * 0.5f);
+
+        if (pinching && !grab.active)
+        {
             var wJob = new GrabWeightsJob
             {
                 verts = verts,
@@ -197,7 +279,7 @@ public class ClayCube : MonoBehaviour
             grab.active = true;
             grab.last = pinchLocal;
         }
-        else if (pinchingNow && grab.active)
+        else if (pinching && grab.active)
         {
             float3 delta = pinchLocal - grab.last;
             if (math.lengthsq(delta) > 0f)
@@ -211,29 +293,6 @@ public class ClayCube : MonoBehaviour
         {
             grab.active = false;
         }
-
-        // ---- poke spheres (skip thumb/index tips while pinching so the grab isn't fought)
-        for (int i = 0; i < bones.Count; i++)
-        {
-            var id = bones[i].Id;
-            bool isTip = id == OVRSkeleton.BoneId.Hand_ThumbTip
-                      || id == OVRSkeleton.BoneId.Hand_IndexTip
-                      || id == OVRSkeleton.BoneId.Hand_MiddleTip
-                      || id == OVRSkeleton.BoneId.Hand_RingTip
-                      || id == OVRSkeleton.BoneId.Hand_PinkyTip;
-            bool isPalm = id == OVRSkeleton.BoneId.Hand_WristRoot;
-            if (!isTip && !isPalm) continue;
-
-            if (grab.active && (id == OVRSkeleton.BoneId.Hand_ThumbTip || id == OVRSkeleton.BoneId.Hand_IndexTip))
-                continue;
-
-            if (tipCount >= tips.Length) break;
-
-            Vector3 local = transform.InverseTransformPoint(bones[i].Transform.position);
-            float r = (isPalm ? palmRadius : fingerRadius) / scale;
-            tips[tipCount++] = new float4(local.x, local.y, local.z, r);
-        }
-
         return dep;
     }
 
@@ -254,42 +313,43 @@ public class ClayCube : MonoBehaviour
         if (verts.IsCreated) verts.Dispose();
         if (normals.IsCreated) normals.Dispose();
         if (tris.IsCreated) tris.Dispose();
-        if (tips.IsCreated) tips.Dispose();
+        if (capsules.IsCreated) capsules.Dispose();
         if (grabLeft.weights.IsCreated) grabLeft.weights.Dispose();
         if (grabRight.weights.IsCreated) grabRight.weights.Dispose();
     }
 
     // ------------------------------------------------------------------- jobs
 
-    /// <summary>Pushes vertices out of fingertip/palm spheres.</summary>
+    /// <summary>Pushes vertices out of every hand capsule (closest point on the segment, radial push).</summary>
     [BurstCompile]
     struct PokeJob : IJobParallelFor
     {
         public NativeArray<float3> verts;
-        [ReadOnly] public NativeArray<float4> tips;
-        public int tipCount;
+        [ReadOnly] public NativeArray<Capsule> capsules;
+        public int capsuleCount;
 
         public void Execute(int i)
         {
             float3 p = verts[i];
-            for (int t = 0; t < tipCount; t++)
+            for (int c = 0; c < capsuleCount; c++)
             {
-                float3 c = tips[t].xyz;
-                float r = tips[t].w;
-                float3 d = p - c;
+                Capsule cap = capsules[c];
+                float3 ab = cap.b - cap.a;
+                float t = math.saturate(math.dot(p - cap.a, ab) / math.max(math.dot(ab, ab), 1e-8f));
+                float3 closest = cap.a + ab * t;
+                float3 d = p - closest;
                 float sq = math.lengthsq(d);
-                if (sq < r * r)
+                if (sq < cap.r * cap.r)
                 {
                     float len = math.sqrt(sq);
                     d = len > 1e-6f ? d / len : new float3(0, 1, 0);
-                    p = c + d * r;
+                    p = closest + d * cap.r;
                 }
             }
             verts[i] = p;
         }
     }
 
-    /// <summary>Smoothstep falloff weights around the pinch point, captured once at grab start.</summary>
     [BurstCompile]
     struct GrabWeightsJob : IJobParallelFor
     {
@@ -306,7 +366,6 @@ public class ClayCube : MonoBehaviour
         }
     }
 
-    /// <summary>Drags grabbed vertices along with the pinch movement.</summary>
     [BurstCompile]
     struct GrabMoveJob : IJobParallelFor
     {
@@ -321,7 +380,6 @@ public class ClayCube : MonoBehaviour
         }
     }
 
-    /// <summary>Area-weighted vertex normals (single-threaded; fine for ~25k verts under Burst).</summary>
     [BurstCompile]
     struct NormalsJob : IJob
     {
