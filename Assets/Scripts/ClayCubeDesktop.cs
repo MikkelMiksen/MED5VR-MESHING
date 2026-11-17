@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -9,7 +10,9 @@ using UnityEngine.InputSystem;
 #endif
 
 /// <summary>
-/// Desktop test version of the clay cube. No headset / Meta SDK needed.
+/// Desktop test version of ClayCube. No headset / Meta SDK needed.
+/// Uses the same reshape method as ClayCube: every vertex slides along the line toward the
+/// cube's centre and can only be pushed IN (depth never decreases), so the surface can't fold.
 ///
 /// Setup: new scene -> create an Empty GameObject -> add this script. Press Play.
 /// (It adds MeshFilter/MeshRenderer, a material, a cursor sphere and frames the camera itself.)
@@ -17,12 +20,13 @@ using UnityEngine.InputSystem;
 /// Controls:
 ///   Mouse move     : moves the cursor sphere (at a fixed depth in front of the camera)
 ///   Mouse wheel    : push the cursor sphere deeper / closer to the camera
-///   Left button    : sculpt (sphere pushes the clay away = dents)
-///   Right button   : grab and drag the clay near the sphere (pull / stretch)
-///   Q / E          : rotate the cube around Y
+///   Left button    : carve (hold and drag; fast mouse movement is swept, so no gaps)
+///   Z              : undo the last stroke
 ///   R              : reset the cube
+///   Q / E          : rotate the cube around Y
 ///
 /// Works with both the old Input Manager and the new Input System package.
+/// Requires: Burst, Collections, Mathematics.
 /// </summary>
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class ClayCubeDesktop : MonoBehaviour
@@ -32,55 +36,86 @@ public class ClayCubeDesktop : MonoBehaviour
     public float size = 0.2f;
 
     [Header("Tool")]
+    [Tooltip("Radius of the cursor sphere in meters.")]
     public float toolRadius = 0.012f;
-    public float grabRadius = 0.04f;
     public float scrollSpeed = 0.02f;
+
+    [Header("Carving")]
+    [Tooltip("Clay can't be pushed closer than this (meters) to the cube's centre.")]
+    public float coreRadius = 0.03f;
+    [Tooltip("Cleanup passes applied after each stroke. 0 = off.")]
+    public int smoothIterations = 1;
+    [Range(0f, 1f)] public float smoothStrength = 0.35f;
+    public int maxUndo = 15;
 
     [Header("Scene")]
     public bool autoFrameCamera = true;
     public Color clayColor = new Color(0.78f, 0.45f, 0.35f);
 
+    struct Capsule
+    {
+        public float3 a;
+        public float3 b;
+        public float r;
+    }
+
+    // ---- mesh + clay data
     Mesh mesh;
-    NativeArray<float3> verts, normals, startVerts;
-    NativeArray<int> tris;
-    NativeArray<float> weights;
-    NativeArray<float4> tips;
+    NativeArray<float3> rest, dir, verts, normals;
+    NativeArray<float> depth, depthTmp;
+    NativeArray<int> tris, neighborStart, neighborIdx;
+    NativeArray<Capsule> capsules;
+    NativeArray<int> changed;
     JobHandle handle;
     bool pending;
 
+    // ---- stroke / undo
+    bool inStroke, strokeChanged;
+    float[] strokeSnapshot;
+    readonly List<float[]> undoStack = new List<float[]>();
+    float3 lastLocal;
+
+    // ---- scene
     Camera cam;
     Transform cursor;
-    float depth;
-    bool grabbing;
-    float3 lastGrabLocal;
+    float cursorDepth;
 
     // ------------------------------------------------------------------ setup
 
     void Awake()
     {
         cam = FindCamera();
-        BuildWeldedCube(out var vList, out var tList);
+        BuildWeldedCube(out var restList, out var tList);
+        int count = restList.Count;
 
-        verts = new NativeArray<float3>(vList.Count, Allocator.Persistent);
-        startVerts = new NativeArray<float3>(vList.Count, Allocator.Persistent);
-        normals = new NativeArray<float3>(vList.Count, Allocator.Persistent);
-        weights = new NativeArray<float>(vList.Count, Allocator.Persistent);
+        rest = new NativeArray<float3>(count, Allocator.Persistent);
+        dir = new NativeArray<float3>(count, Allocator.Persistent);
+        verts = new NativeArray<float3>(count, Allocator.Persistent);
+        normals = new NativeArray<float3>(count, Allocator.Persistent);
+        depth = new NativeArray<float>(count, Allocator.Persistent);
+        depthTmp = new NativeArray<float>(count, Allocator.Persistent);
         tris = new NativeArray<int>(tList.ToArray(), Allocator.Persistent);
-        tips = new NativeArray<float4>(1, Allocator.Persistent);
+        capsules = new NativeArray<Capsule>(4, Allocator.Persistent);
+        changed = new NativeArray<int>(1, Allocator.Persistent);
 
-        for (int i = 0; i < vList.Count; i++) { verts[i] = vList[i]; startVerts[i] = vList[i]; }
+        for (int i = 0; i < count; i++)
+        {
+            rest[i] = restList[i];
+            verts[i] = restList[i];
+            dir[i] = -math.normalize((float3)restList[i]); // radially toward the centre
+        }
+
+        BuildNeighbors(count, tList);
 
         mesh = new Mesh { name = "ClayCubeDesktop" };
-        if (vList.Count > 65000) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        if (count > 65000) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         mesh.MarkDynamic();
-        mesh.SetVertices(vList);
+        mesh.SetVertices(restList);
         mesh.SetTriangles(tList, 0);
         mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
+        mesh.RecalculateBounds(); // vertices only move inward, so these bounds stay valid
         GetComponent<MeshFilter>().sharedMesh = mesh;
-
-        var mat = MakeMaterial(clayColor);
-        GetComponent<MeshRenderer>().sharedMaterial = mat;
+        GetComponent<MeshRenderer>().sharedMaterial = MakeMaterial(clayColor);
 
         // Cursor sphere
         var s = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -97,7 +132,7 @@ public class ClayCubeDesktop : MonoBehaviour
             cam.transform.LookAt(transform.position);
         }
 
-        depth = cam != null
+        cursorDepth = cam != null
             ? Vector3.Distance(cam.transform.position, transform.position) - size * 0.6f
             : 0.3f;
     }
@@ -111,15 +146,6 @@ public class ClayCubeDesktop : MonoBehaviour
         return c;
     }
 
-    void OnGUI()
-    {
-        // Debug readout so you can see what the script thinks is happening.
-        var input = ReadInput();
-        string camName = cam != null ? cam.name : "NONE";
-        GUI.Label(new Rect(10, 10, 700, 25),
-            $"cam: {camName} | mouse: {input.mouse} | depth: {depth:F3} | L:{input.left} R:{input.right}");
-    }
-
     static Material MakeMaterial(Color c)
     {
         Shader sh = Shader.Find("Universal Render Pipeline/Lit");
@@ -131,7 +157,7 @@ public class ClayCubeDesktop : MonoBehaviour
         return m;
     }
 
-    void BuildWeldedCube(out List<Vector3> vList, out List<int> tList)
+    void BuildWeldedCube(out List<Vector3> restList, out List<int> tList)
     {
         int n = resolution, s = n + 1;
         var map = new int[s * s * s];
@@ -170,8 +196,33 @@ public class ClayCubeDesktop : MonoBehaviour
             else           { tl.Add(p00); tl.Add(p01); tl.Add(p10); tl.Add(p10); tl.Add(p01); tl.Add(p11); }
         }
 
-        vList = vl;
+        restList = vl;
         tList = tl;
+    }
+
+    void BuildNeighbors(int count, List<int> t)
+    {
+        var sets = new HashSet<int>[count];
+        for (int i = 0; i < count; i++) sets[i] = new HashSet<int>();
+        for (int k = 0; k < t.Count; k += 3)
+        {
+            int a = t[k], b = t[k + 1], c = t[k + 2];
+            sets[a].Add(b); sets[a].Add(c);
+            sets[b].Add(a); sets[b].Add(c);
+            sets[c].Add(a); sets[c].Add(b);
+        }
+
+        var start = new int[count + 1];
+        var idx = new List<int>();
+        for (int i = 0; i < count; i++)
+        {
+            start[i] = idx.Count;
+            idx.AddRange(sets[i]);
+        }
+        start[count] = idx.Count;
+
+        neighborStart = new NativeArray<int>(start, Allocator.Persistent);
+        neighborIdx = new NativeArray<int>(idx.ToArray(), Allocator.Persistent);
     }
 
     // ------------------------------------------------------------------ input
@@ -180,7 +231,7 @@ public class ClayCubeDesktop : MonoBehaviour
     {
         public Vector2 mouse;
         public float scroll;
-        public bool left, right, q, e, r;
+        public bool left, q, e, rDown, zDown;
     }
 
     static InputState ReadInput()
@@ -192,26 +243,37 @@ public class ClayCubeDesktop : MonoBehaviour
         if (m != null)
         {
             s.mouse = m.position.ReadValue();
-            s.scroll = Mathf.Sign(m.scroll.ReadValue().y) * (Mathf.Abs(m.scroll.ReadValue().y) > 0.01f ? 1f : 0f);
+            float sy = m.scroll.ReadValue().y;
+            s.scroll = Mathf.Abs(sy) > 0.01f ? Mathf.Sign(sy) : 0f;
             s.left = m.leftButton.isPressed;
-            s.right = m.rightButton.isPressed;
         }
         if (k != null)
         {
             s.q = k.qKey.isPressed;
             s.e = k.eKey.isPressed;
-            s.r = k.rKey.wasPressedThisFrame;
+            s.rDown = k.rKey.wasPressedThisFrame;
+            s.zDown = k.zKey.wasPressedThisFrame;
         }
 #else
         s.mouse = Input.mousePosition;
-        s.scroll = Mathf.Sign(Input.mouseScrollDelta.y) * (Mathf.Abs(Input.mouseScrollDelta.y) > 0.01f ? 1f : 0f);
+        float sy = Input.mouseScrollDelta.y;
+        s.scroll = Mathf.Abs(sy) > 0.01f ? Mathf.Sign(sy) : 0f;
         s.left = Input.GetMouseButton(0);
-        s.right = Input.GetMouseButton(1);
         s.q = Input.GetKey(KeyCode.Q);
         s.e = Input.GetKey(KeyCode.E);
-        s.r = Input.GetKeyDown(KeyCode.R);
+        s.rDown = Input.GetKeyDown(KeyCode.R);
+        s.zDown = Input.GetKeyDown(KeyCode.Z);
 #endif
         return s;
+    }
+
+    void OnGUI()
+    {
+        // Debug readout so you can see what the script thinks is happening.
+        var input = ReadInput();
+        string camName = cam != null ? cam.name : "NONE";
+        GUI.Label(new Rect(10, 10, 800, 25),
+            $"cam: {camName} | mouse: {input.mouse} | depth: {cursorDepth:F3} | carving: {input.left} | undo steps: {undoStack.Count}");
     }
 
     // ----------------------------------------------------------------- update
@@ -222,159 +284,283 @@ public class ClayCubeDesktop : MonoBehaviour
         if (cam == null) return;
         var input = ReadInput();
 
-        // Rotate / reset cube
+        // Rotate cube
         if (input.q) transform.Rotate(0f, 90f * Time.deltaTime, 0f, Space.World);
         if (input.e) transform.Rotate(0f, -90f * Time.deltaTime, 0f, Space.World);
-        if (input.r)
-        {
-            handle.Complete();
-            pending = false;
-            for (int i = 0; i < verts.Length; i++) verts[i] = startVerts[i];
-            mesh.SetVertices(verts.Reinterpret<Vector3>());
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-        }
+
+        if (input.rDown) ResetClay();
+        if (input.zDown) Undo();
 
         // Cursor position
-        depth = Mathf.Max(0.05f, depth + input.scroll * scrollSpeed);
+        cursorDepth = Mathf.Max(0.05f, cursorDepth + input.scroll * scrollSpeed);
         Ray ray = cam.ScreenPointToRay(input.mouse);
-        cursor.position = ray.origin + ray.direction * depth;
+        cursor.position = ray.origin + ray.direction * cursorDepth;
         float3 cursorLocal = transform.InverseTransformPoint(cursor.position);
         float scale = transform.lossyScale.x;
 
-        JobHandle dep = default;
-        int tipCount = 0;
-
-        // Right button: grab / drag
-        if (input.right)
+        if (input.left)
         {
-            if (!grabbing)
+            if (!inStroke)
             {
-                var wJob = new GrabWeightsJob
+                BeginStroke();
+                lastLocal = cursorLocal;
+            }
+
+            // Capsule swept from last frame's cursor position to this frame's, so fast mouse
+            // movement can't skip over vertices.
+            float r = toolRadius / scale;
+            if (OverlapsBounds(lastLocal, cursorLocal, r))
+            {
+                capsules[0] = new Capsule { a = lastLocal, b = cursorLocal, r = r };
+
+                var carve = new CarveJob
                 {
+                    rest = rest,
+                    dir = dir,
+                    depth = depth,
                     verts = verts,
-                    weights = weights,
-                    center = cursorLocal,
-                    radius = grabRadius / scale
+                    capsules = capsules,
+                    capsuleCount = 1,
+                    core = coreRadius / scale,
+                    changed = changed
                 };
-                dep = wJob.Schedule(verts.Length, 256, dep);
-                grabbing = true;
-                lastGrabLocal = cursorLocal;
+                var norm = new NormalsJob { verts = verts, tris = tris, normals = normals };
+                handle = norm.Schedule(carve.Schedule(verts.Length, 256));
+                pending = true;
             }
-            else
-            {
-                float3 delta = cursorLocal - lastGrabLocal;
-                if (math.lengthsq(delta) > 0f)
-                {
-                    var mJob = new GrabMoveJob { verts = verts, weights = weights, delta = delta };
-                    dep = mJob.Schedule(verts.Length, 256, dep);
-                }
-                lastGrabLocal = cursorLocal;
-            }
+            lastLocal = cursorLocal;
         }
-        else
+        else if (inStroke)
         {
-            grabbing = false;
+            EndStroke();
         }
-
-        // Left button: sculpt (sphere pushes clay out of the way)
-        if (input.left && !input.right)
-        {
-            tips[0] = new float4(cursorLocal.x, cursorLocal.y, cursorLocal.z, toolRadius / scale);
-            tipCount = 1;
-        }
-
-        if (tipCount == 0 && !grabbing)
-        {
-            dep.Complete();
-            return;
-        }
-
-        var poke = new PokeJob { verts = verts, tips = tips, tipCount = tipCount };
-        var norm = new NormalsJob { verts = verts, tris = tris, normals = normals };
-        dep = poke.Schedule(verts.Length, 256, dep);
-        handle = norm.Schedule(dep);
-        pending = true;
     }
 
     void LateUpdate()
+    {
+        FinishPending();
+    }
+
+    bool OverlapsBounds(float3 a, float3 b, float r)
+    {
+        float half = size * 0.5f + r;
+        if (math.min(a.x, b.x) > half || math.max(a.x, b.x) < -half) return false;
+        if (math.min(a.y, b.y) > half || math.max(a.y, b.y) < -half) return false;
+        if (math.min(a.z, b.z) > half || math.max(a.z, b.z) < -half) return false;
+        return true;
+    }
+
+    /// <summary>Completes the carve jobs (if any) and uploads the result to the mesh.</summary>
+    void FinishPending()
     {
         if (!pending) return;
         handle.Complete();
         pending = false;
 
+        if (changed[0] != 0)
+        {
+            strokeChanged = true;
+            changed[0] = 0;
+        }
+        UploadMesh();
+    }
+
+    void UploadMesh()
+    {
         mesh.SetVertices(verts.Reinterpret<Vector3>());
         mesh.SetNormals(normals.Reinterpret<Vector3>());
-        mesh.RecalculateBounds();
+    }
+
+    // ------------------------------------------------------------ strokes + undo
+
+    void BeginStroke()
+    {
+        strokeSnapshot = depth.ToArray();
+        strokeChanged = false;
+        inStroke = true;
+    }
+
+    void EndStroke()
+    {
+        FinishPending();
+        inStroke = false;
+
+        if (strokeChanged && strokeSnapshot != null)
+        {
+            undoStack.Add(strokeSnapshot);
+            if (undoStack.Count > maxUndo) undoStack.RemoveAt(0);
+            SmoothAfterStroke();
+        }
+        strokeSnapshot = null;
+        strokeChanged = false;
+    }
+
+    void SmoothAfterStroke()
+    {
+        if (smoothIterations <= 0 || smoothStrength <= 0f) return;
+
+        for (int it = 0; it < smoothIterations; it++)
+        {
+            var job = new DilateSmoothJob
+            {
+                src = depth,
+                dst = depthTmp,
+                start = neighborStart,
+                idx = neighborIdx,
+                strength = smoothStrength
+            };
+            job.Schedule(depth.Length, 256).Complete();
+            depth.CopyFrom(depthTmp);
+        }
+        RebuildMesh();
+    }
+
+    /// <summary>Undo the last stroke.</summary>
+    public void Undo()
+    {
+        FinishPending();
+        if (inStroke) EndStroke();
+        if (undoStack.Count == 0) return;
+
+        var snap = undoStack[undoStack.Count - 1];
+        undoStack.RemoveAt(undoStack.Count - 1);
+        depth.CopyFrom(snap);
+        RebuildMesh();
+    }
+
+    /// <summary>Restore the original cube and clear undo history.</summary>
+    public void ResetClay()
+    {
+        FinishPending();
+        inStroke = false;
+        strokeSnapshot = null;
+        strokeChanged = false;
+        undoStack.Clear();
+        for (int i = 0; i < depth.Length; i++) depth[i] = 0f;
+        RebuildMesh();
+    }
+
+    void RebuildMesh()
+    {
+        var apply = new ApplyDepthJob { rest = rest, dir = dir, depth = depth, verts = verts };
+        var norm = new NormalsJob { verts = verts, tris = tris, normals = normals };
+        norm.Schedule(apply.Schedule(verts.Length, 256)).Complete();
+        UploadMesh();
     }
 
     void OnDestroy()
     {
         handle.Complete();
+        if (rest.IsCreated) rest.Dispose();
+        if (dir.IsCreated) dir.Dispose();
         if (verts.IsCreated) verts.Dispose();
-        if (startVerts.IsCreated) startVerts.Dispose();
         if (normals.IsCreated) normals.Dispose();
-        if (weights.IsCreated) weights.Dispose();
+        if (depth.IsCreated) depth.Dispose();
+        if (depthTmp.IsCreated) depthTmp.Dispose();
         if (tris.IsCreated) tris.Dispose();
-        if (tips.IsCreated) tips.Dispose();
+        if (neighborStart.IsCreated) neighborStart.Dispose();
+        if (neighborIdx.IsCreated) neighborIdx.Dispose();
+        if (capsules.IsCreated) capsules.Dispose();
+        if (changed.IsCreated) changed.Dispose();
     }
 
     // ------------------------------------------------------------------- jobs
+    // Identical to the jobs in ClayCube.
 
+    /// <summary>
+    /// Push-in-only carving. Each vertex slides along its fixed inward direction until it is
+    /// outside every capsule. Depth never decreases.
+    /// </summary>
     [BurstCompile]
-    struct PokeJob : IJobParallelFor
+    struct CarveJob : IJobParallelFor
     {
+        [ReadOnly] public NativeArray<float3> rest;
+        [ReadOnly] public NativeArray<float3> dir;
+        public NativeArray<float> depth;
         public NativeArray<float3> verts;
-        [ReadOnly] public NativeArray<float4> tips;
-        public int tipCount;
+        [ReadOnly] public NativeArray<Capsule> capsules;
+        public int capsuleCount;
+        public float core;
+        [NativeDisableParallelForRestriction] public NativeArray<int> changed;
 
         public void Execute(int i)
         {
-            float3 p = verts[i];
-            for (int t = 0; t < tipCount; t++)
+            float3 r = rest[i];
+            float3 u = dir[i];
+            float d0 = depth[i];
+            float d = d0;
+            float limit = math.max(0f, math.length(r) - core);
+
+            for (int pass = 0; pass < 2; pass++)
             {
-                float3 c = tips[t].xyz;
-                float r = tips[t].w;
-                float3 d = p - c;
-                float sq = math.lengthsq(d);
-                if (sq < r * r)
+                for (int c = 0; c < capsuleCount; c++)
                 {
-                    float len = math.sqrt(sq);
-                    d = len > 1e-6f ? d / len : new float3(0, 1, 0);
-                    p = c + d * r;
+                    Capsule cap = capsules[c];
+                    float3 ab = cap.b - cap.a;
+                    float abLen2 = math.max(math.dot(ab, ab), 1e-8f);
+                    float r2 = cap.r * cap.r;
+
+                    for (int it = 0; it < 3; it++)
+                    {
+                        float3 p = r + u * d;
+                        float t = math.saturate(math.dot(p - cap.a, ab) / abLen2);
+                        float3 dv = p - (cap.a + ab * t);
+                        float sq = math.lengthsq(dv);
+                        if (sq >= r2) break;
+
+                        // distance along u until we leave the sphere around the closest point
+                        float b = math.dot(dv, u);
+                        float s = -b + math.sqrt(math.max(b * b + (r2 - sq), 0f));
+                        d += s + 1e-5f;
+                    }
                 }
+                if (d >= limit) break;
             }
-            verts[i] = p;
+
+            d = math.max(d0, math.min(d, limit));
+            if (d > d0 + 1e-6f)
+            {
+                depth[i] = d;
+                verts[i] = r + u * d;
+                changed[0] = 1;
+            }
         }
     }
 
+    /// <summary>Cleanup: smooths carved areas but never lifts a vertex back out.</summary>
     [BurstCompile]
-    struct GrabWeightsJob : IJobParallelFor
+    struct DilateSmoothJob : IJobParallelFor
     {
-        [ReadOnly] public NativeArray<float3> verts;
-        public NativeArray<float> weights;
-        public float3 center;
-        public float radius;
+        [ReadOnly] public NativeArray<float> src;
+        public NativeArray<float> dst;
+        [ReadOnly] public NativeArray<int> start;
+        [ReadOnly] public NativeArray<int> idx;
+        public float strength;
 
         public void Execute(int i)
         {
-            float d = math.distance(verts[i], center);
-            float w = 1f - math.saturate(d / radius);
-            weights[i] = w * w * (3f - 2f * w);
+            int s0 = start[i], s1 = start[i + 1];
+            float d = src[i];
+            if (s1 <= s0) { dst[i] = d; return; }
+
+            float sum = 0f;
+            for (int k = s0; k < s1; k++) sum += src[idx[k]];
+            float avg = sum / (s1 - s0);
+            dst[i] = math.max(d, math.lerp(d, avg, strength));
         }
     }
 
     [BurstCompile]
-    struct GrabMoveJob : IJobParallelFor
+    struct ApplyDepthJob : IJobParallelFor
     {
+        [ReadOnly] public NativeArray<float3> rest;
+        [ReadOnly] public NativeArray<float3> dir;
+        [ReadOnly] public NativeArray<float> depth;
         public NativeArray<float3> verts;
-        [ReadOnly] public NativeArray<float> weights;
-        public float3 delta;
 
         public void Execute(int i)
         {
-            float w = weights[i];
-            if (w > 0f) verts[i] += delta * w;
+            verts[i] = rest[i] + dir[i] * depth[i];
         }
     }
 
