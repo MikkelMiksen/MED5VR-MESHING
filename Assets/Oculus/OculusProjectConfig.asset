@@ -31,7 +31,7 @@ MonoBehaviour:
   securityXmlPath: 
   horizonOsSdkDisabled: 0
   minHorizonOsSdkVersion: 60
-  targetHorizonOsSdkVersion: 205
+  targetHorizonOsSdkVersion: 207
   skipUnneededShaders: 0
   enableIL2CPPLTO: 0
   removeGradleManifest: 1
@@ -42,7 +42,7 @@ MonoBehaviour:
   experimentalFeaturesEnabled: 0
   useForwardHeadPose: 1
   insightPassthroughEnabled: 0
-  _insightPassthroughSupport: 1
+  _insightPassthroughSupport: 2
   isPassthroughCameraAccessEnabled: 1
   _processorFavor: 0
   systemSplashScreen: {fileID: 0}
