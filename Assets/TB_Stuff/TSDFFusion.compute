@@ -1,0 +1,108 @@
+#pragma kernel Clear
+#pragma kernel Integrate
+#pragma kernel Count
+
+// x = TSDF value in [-1, 1] (positive = in front of surface), y = accumulated weight
+RWTexture3D<float2> _Volume;
+Texture2DArray<float> _DepthTex;
+RWStructuredBuffer<uint> _Counters;   // [0] observed voxels, [1] near-surface voxels
+
+int3 _Res;
+float4x4 _VoxelToWorld;
+float4x4 _DepthReprojection[2];
+float4 _DepthZBufferParams;
+float _Truncation;      // metres
+float _MaxWeight;
+float _MinRange;
+float _MaxRange;
+float _EdgeThreshold;   // relative depth jump between neighbouring pixels
+int _DepthSize;
+int _FlipY;
+int _HandCount;
+float4 _HandSpheres[16];   // xyz = world position, w = radius
+
+// Same formula as Meta's depth shader library.
+float LinearDepth(float ndc)
+{
+    return (1.0 / (ndc + _DepthZBufferParams.y)) * _DepthZBufferParams.x;
+}
+
+float LoadLinear(int2 px, int eye)
+{
+    px = clamp(px, 0, _DepthSize - 1);
+    return LinearDepth(_DepthTex.Load(int4(px, eye, 0)));
+}
+
+[numthreads(8, 8, 8)]
+void Clear(uint3 id : SV_DispatchThreadID)
+{
+    if (any(id >= (uint3)_Res)) return;
+    _Volume[id] = float2(1.0, 0.0);
+}
+
+[numthreads(8, 8, 8)]
+void Integrate(uint3 id : SV_DispatchThreadID)
+{
+    if (any(id >= (uint3)_Res)) return;
+
+    float3 wp = mul(_VoxelToWorld, float4((float3)id, 1.0)).xyz;
+
+    // Skip voxels near the user's hands (hand removal isn't supported on this device).
+    for (int h = 0; h < _HandCount; h++)
+    {
+        float4 s = _HandSpheres[h];
+        float3 d3 = wp - s.xyz;
+        if (dot(d3, d3) < s.w * s.w) return;
+    }
+
+    float acc = 0.0;
+    float accW = 0.0;
+
+    [unroll]
+    for (int eye = 0; eye < 2; eye++)
+    {
+        float4 clip = mul(_DepthReprojection[eye], float4(wp, 1.0));
+        if (clip.w <= 0.0) continue;
+
+        float2 uv = clip.xy / clip.w * 0.5 + 0.5;
+        if (_FlipY != 0) uv.y = 1.0 - uv.y;
+        if (any(uv < 0.0) || any(uv >= 1.0)) continue;
+
+        int2 px = int2(uv * _DepthSize);
+        float d = LoadLinear(px, eye);
+        if (!(d > _MinRange && d < _MaxRange)) continue;   // also rejects NaN / infinite
+
+        // Silhouette / noisy edge rejection
+        float tol = _EdgeThreshold * d;
+        if (abs(LoadLinear(px + int2(1, 0), eye) - d) > tol) continue;
+        if (abs(LoadLinear(px - int2(1, 0), eye) - d) > tol) continue;
+        if (abs(LoadLinear(px + int2(0, 1), eye) - d) > tol) continue;
+        if (abs(LoadLinear(px - int2(0, 1), eye) - d) > tol) continue;
+
+        // clip.w is the voxel's linear depth in the depth camera (matches the linearized sample)
+        float sdf = d - clip.w;
+        if (sdf < -_Truncation) continue;   // behind the surface: unknown
+
+        acc += clamp(sdf / _Truncation, -1.0, 1.0);
+        accW += 1.0;
+    }
+
+    if (accW <= 0.0) return;
+
+    float2 cur = _Volume[id];
+    float newW = cur.y + accW;
+    float newV = (cur.x * cur.y + acc) / newW;
+    _Volume[id] = float2(newV, min(newW, _MaxWeight));
+}
+
+[numthreads(8, 8, 8)]
+void Count(uint3 id : SV_DispatchThreadID)
+{
+    if (any(id >= (uint3)_Res)) return;
+    float2 v = _Volume[id];
+    if (v.y > 0.0)
+    {
+        InterlockedAdd(_Counters[0], 1);
+        if (abs(v.x) < 0.25) InterlockedAdd(_Counters[1], 1);
+    }
+}
