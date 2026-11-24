@@ -21,6 +21,7 @@ public class PassThrough : MonoBehaviour
     [SerializeField] private GameObject imagePrefab;
     [SerializeField] private GameObject parentCanvas;
     [SerializeField] private Camera m_camera;
+    [SerializeField] private RoutineSender m_routineSender;
 
     private Transform controller;
     private IEnumerator Start()
@@ -113,10 +114,11 @@ public class PassThrough : MonoBehaviour
         result.Apply();
         //m_cameraSnapshot.LoadRawTextureData(m_cameraAccess.GetTexture()); //Test this, see what it does
         m_cameraSnapshot.Apply();
-        var bytes = result.EncodeToPNG();
+        //var bytes = result.EncodeToPNG();
         //File.WriteAllBytes(Application.dataPath + "/../SavedScreen.png", bytes);
         m_image.texture = result;
         currentImage.GetComponent<RawImage>().texture = result;
+        StartCoroutine(m_routineSender.SendImage(result));
         /*
         Normalize Yolo coordinates
         Yolo coordinates 

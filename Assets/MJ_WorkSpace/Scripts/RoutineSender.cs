@@ -18,14 +18,16 @@ public class RoutineSender : MonoBehaviour
     [SerializeField] private string outputFileName = "bottle_fixed.glb";
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
+    /*
     IEnumerator Start()
     {
         //image = Resources.Load<Texture2D>("Assets/bottle_fixed.png");
         yield return new WaitForSeconds(1f);
         StartCoroutine(SendImage(image));
     }
+    */
 
-    IEnumerator SendImage(Texture2D file)
+    public IEnumerator SendImage(Texture2D file)
     {
        byte[] pngBytes = file.EncodeToPNG();
 
