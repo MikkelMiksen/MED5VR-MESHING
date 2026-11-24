@@ -1,0 +1,746 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!200 &20000000
+ShaderVariantCollection:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: ShaderSample
+  m_Shaders:
+  - first: {fileID: 64, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: SHADOWS_SPLIT_SPHERES
+        passType: 0
+  - first: {fileID: 10770, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 66, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: DIRECTIONAL LIGHTPROBE_SH SHADOWS_SCREEN
+        passType: 4
+      - keywords: DIRECTIONAL LIGHTPROBE_SH SHADOWS_SCREEN _EMISSION
+        passType: 4
+      - keywords: DIRECTIONAL LIGHTPROBE_SH SHADOWS_SCREEN _NORMALMAP
+        passType: 4
+      - keywords: DIRECTIONAL LIGHTPROBE_SH _ALPHABLEND_ON
+        passType: 4
+      - keywords: DIRECTIONAL LIGHTPROBE_SH _ALPHABLEND_ON _EMISSION
+        passType: 4
+      - keywords: DIRECTIONAL _ALPHABLEND_ON
+        passType: 5
+      - keywords: SHADOWS_DEPTH
+        passType: 8
+      - keywords: SHADOWS_DEPTH _ALPHABLEND_ON
+        passType: 8
+  - first: {fileID: 47, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: SHADOWS_DEPTH
+        passType: 8
+  - first: {fileID: 106, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: _SUNDISK_SIMPLE
+        passType: 0
+  - first: {fileID: 211, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: SOFTPARTICLES_ON
+        passType: 0
+      - keywords: SOFTPARTICLES_ON _ALPHABLEND_ON
+        passType: 0
+      - keywords: PROCEDURAL_INSTANCING_ON SHADOWS_DEPTH _ALPHABLEND_ON
+        passType: 8
+      - keywords: SHADOWS_DEPTH _ALPHABLEND_ON
+        passType: 8
+  - first: {fileID: 9000, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 9001, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 9002, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 9003, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 9004, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 9007, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 9100, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: UIE_FORCE_GAMMA
+        passType: 0
+  - first: {fileID: 9101, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 19011, guid: 0000000000000000f000000000000000, type: 0}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 9d034fa3f535a1648b5059e6907c647d, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 589b36d0aa66c7349bcff8750b670434, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 7c52c9bacdbb59f4a973dd1849d03106, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 1d90b910cd5a4854598ecfe4f74358d1, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 3a4384a97ee36b54cb7114ba12a91159, type: 3}
+    second:
+      variants:
+      - keywords: DIRECTIONAL
+        passType: 4
+      - keywords: POINT
+        passType: 5
+      - keywords: SHADOWS_DEPTH
+        passType: 8
+      - keywords: 
+        passType: 10
+      - keywords: 
+        passType: 11
+  - first: {fileID: 4800000, guid: e8904231ba71c4544929470999585a9e, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: f2e8677bac33bbf4eb43f0f1289803a7, type: 3}
+    second:
+      variants:
+      - keywords: DIRECTIONAL
+        passType: 4
+      - keywords: DIRECTIONAL LIGHTPROBE_SH SHADOWS_SCREEN
+        passType: 4
+      - keywords: POINT
+        passType: 5
+      - keywords: SHADOWS_DEPTH
+        passType: 8
+      - keywords: 
+        passType: 10
+      - keywords: 
+        passType: 11
+  - first: {fileID: 4800000, guid: 77a2ee155fd74b5ea2fb0140071ef94d, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: b9a6f3142dc447b4b5773eda9f7ff076, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 9886c75bfc7245119ad0697fc4cfd071, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: c509b07e9e75460ab2d2089fe237c988, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: adf6421d97e94e07ac4487285e5586f9, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: dfe0840987bd04d99b2cefa38c1e27f4, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: ffa286a4ef944f879424a54df9d54271, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 0af910563c584febabca3f5810be2f28, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: b0b4d9b7641b02f45a805c4a4ad9048a, type: 3}
+    second:
+      variants:
+      - keywords: DIRECTIONAL
+        passType: 4
+      - keywords: POINT
+        passType: 5
+      - keywords: 
+        passType: 11
+  - first: {fileID: 4800000, guid: e720ef9c6dcfbe4489d043ddf61706f8, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 38ad33c152e32ee46a9bbbb0e656f7e1, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: b95caf64e2cc3614892026a94bb2be84, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: dcdb5896ff6cba046888189977d9293a, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 3f032750a244319498ff63757c66cf04, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 8a42c39a6f97c4362a11b9ca2f542a32, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 1930b7b9ed5bddd4ab959652723a377c, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: cfa50fc6e259b524ea01ec7dde0f108d, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: f7a957024f8cfba47b11d3c17287900b, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 467bb1d52b84786459dbd9be4a413086, type: 3}
+    second:
+      variants:
+      - keywords: POINT
+        passType: 4
+      - keywords: POINT
+        passType: 5
+      - keywords: SHADOWS_DEPTH
+        passType: 8
+  - first: {fileID: 4800000, guid: fadb727869e4c4392bda563f077b98ed, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: f5c5f9a14247a47809769bb2ccfae268, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: e1b734cb95fa288408401d3b5c6167db, type: 3}
+    second:
+      variants:
+      - keywords: DIRECTIONAL
+        passType: 4
+      - keywords: POINT
+        passType: 5
+      - keywords: 
+        passType: 10
+      - keywords: 
+        passType: 11
+  - first: {fileID: 4800000, guid: 47290247fb23c194da357673ecc1061a, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: d83cf346d52c15b4abac9c631a96e7c5, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 94b0b532ddec06e4895dd0111e28c278, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 26d6efc6402bf47acbadbb5e39fa5443, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 87aebc2701b73a84687f693e551b912b, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 05b53b473302943b58b8e33c93a38dac, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 9aa46566e1d86644c9a55e3037e935f6, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 2bd7618c3fa0e4b4ab8e08dc3fadc376, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: a8577c885e80d8043946ac5b7abcf9a1, type: 3}
+    second:
+      variants:
+      - keywords: DIRECTIONAL
+        passType: 4
+      - keywords: POINT
+        passType: 5
+      - keywords: 
+        passType: 11
+  - first: {fileID: 4800000, guid: 561ccac587275c745aec500620f12fc7, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: eaeac9ce83896a04691d2590189776f5, type: 3}
+    second:
+      variants:
+      - keywords: DIRECTIONAL
+        passType: 4
+      - keywords: POINT
+        passType: 5
+      - keywords: 
+        passType: 10
+      - keywords: 
+        passType: 11
+  - first: {fileID: 4800000, guid: d6708eb99dec8334fb83db57b764097a, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+      - keywords: DIRECTIONAL
+        passType: 4
+      - keywords: POINT
+        passType: 5
+      - keywords: 
+        passType: 10
+      - keywords: 
+        passType: 11
+  - first: {fileID: 4800000, guid: a31796e9e8816c7448b55d584c9417f1, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: ced943c76cb8fb8489bab18c3dfcdcd3, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: c66659348633e544c91f1d7edc5e2791, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: d76289bd06264004ba8a30d1d7f38edf, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 03b1a861a358e4d47bed8f39804b5214, type: 3}
+    second:
+      variants:
+      - keywords: Relu
+        passType: 0
+  - first: {fileID: 4800000, guid: 15a0aa31c9b91c041925cc3de29c4e26, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 9cfce579de4d59b4ab6b1a9f8ae13c20, type: 3}
+    second:
+      variants:
+      - keywords: TensorFloat
+        passType: 0
+  - first: {fileID: 4800000, guid: 059549276313d2f439e017403c57d387, type: 3}
+    second:
+      variants:
+      - keywords: Gemm None
+        passType: 0
+  - first: {fileID: 4800000, guid: d05ce379079bdc24981764bf92992d1c, type: 3}
+    second:
+      variants:
+      - keywords: CONV1D NONE
+        passType: 0
+  - first: {fileID: 4800000, guid: 0caebc90d3e9cf34ab027d9ac1f3f862, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: c2955aa4959aca5459e31244e2c15c75, type: 3}
+    second:
+      variants:
+      - keywords: LINEAR UPSAMPLE1D
+        passType: 0
+  - first: {fileID: 4800000, guid: 77c53608d0ab97044a88bdac2a324944, type: 3}
+    second:
+      variants:
+      - keywords: FloatToInt
+        passType: 0
+  - first: {fileID: 4800000, guid: e5167d5597ba3044fb87bb8920a61cb4, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 9828d2ad9cf725844aa703e61445ec06, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 126a6b15060a41b4fb93ca8ea360fea0, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 98163469307528a4d81ec6a9148afb5f, type: 3}
+    second:
+      variants:
+      - keywords: RandomUniform
+        passType: 0
+  - first: {fileID: 4800000, guid: e88f7e8badceff84bbfc496e83b8bd9e, type: 3}
+    second:
+      variants:
+      - keywords: MAXPOOL POOL1D
+        passType: 0
+  - first: {fileID: 4800000, guid: 8b3eb5dc68bcb0543993d824868695e1, type: 3}
+    second:
+      variants:
+      - keywords: ReduceMin
+        passType: 0
+  - first: {fileID: 4800000, guid: 9c4266a79a9d1774cb85fd1ce8a6431c, type: 3}
+    second:
+      variants:
+      - keywords: ReduceNone
+        passType: 0
+  - first: {fileID: 4800000, guid: fdb3ea5dcc705e94992d7ad588c40ecb, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: f33f87dc47e7e9148a2a203d30060197, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 6ef3b626fe013c64cb2a9e4c0bb5c885, type: 3}
+    second:
+      variants:
+      - keywords: EXACT
+        passType: 0
+  - first: {fileID: 4800000, guid: 5e9131fe657dd784ea93afffb7fb1219, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 12956b51986598647b8f8efc56c79728, type: 3}
+    second:
+      variants:
+      - keywords: Sign
+        passType: 0
+  - first: {fileID: 4800000, guid: c79610721bbad6e458d9fae3c565e23e, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 196522ca0f611744fa187099d38ee9a4, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 33f3b1982a31b524983126ac35015f67, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 2ea78a964eae8e443bd2c8c91a5f8434, type: 3}
+    second:
+      variants:
+      - keywords: IsInf
+        passType: 0
+  - first: {fileID: 4800000, guid: 897317900dfc6584ba4874765def2253, type: 3}
+    second:
+      variants:
+      - keywords: TensorFloat
+        passType: 0
+  - first: {fileID: 4800000, guid: 16f6765321ffa364a89806e925d59d69, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: e5b6ac4d6ccc1f5478908d0aa32ea1b2, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 1ad904b919efe444585d30d515fcdccf, type: 3}
+    second:
+      variants:
+      - keywords: TensorFloat
+        passType: 0
+  - first: {fileID: 4800000, guid: 44d50c7ed27ce6e4eb04e397ed2a591c, type: 3}
+    second:
+      variants:
+      - keywords: CONV1D NONE
+        passType: 0
+  - first: {fileID: 4800000, guid: ea2d7d491467e1843b44bdae610f0c2f, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 7a225a456fc1fd34993bc39a9536138c, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 2aa6309ac12fd9342b1031ae5063657c, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 4edb45e088808554f94b9545fe25772d, type: 3}
+    second:
+      variants:
+      - keywords: COLUMNROWDEPTH
+        passType: 0
+  - first: {fileID: 4800000, guid: 0b25a979fca8ac84ab6ed05213a2f3af, type: 3}
+    second:
+      variants:
+      - keywords: CONSTANT
+        passType: 0
+  - first: {fileID: 4800000, guid: 6c558750aaf135b4f926ab11237dbcaf, type: 3}
+    second:
+      variants:
+      - keywords: CONV1D NONE
+        passType: 0
+  - first: {fileID: 4800000, guid: c81c96aaa9dc80c459afd5c99920549f, type: 3}
+    second:
+      variants:
+      - keywords: AVGPOOL
+        passType: 0
+  - first: {fileID: 4800000, guid: c0ec7e5a3213644fc935356fe1b2b265, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 1a07c691324387740b607ae6b8b478e0, type: 3}
+    second:
+      variants:
+      - keywords: EXACT
+        passType: 0
+  - first: {fileID: 4800000, guid: 701fd8bcd92259745b56acd7a98edeaf, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: e697a10fb6911e44aabbf79cbcd09cab, type: 3}
+    second:
+      variants:
+      - keywords: LINEAR
+        passType: 0
+  - first: {fileID: 4800000, guid: 4d57a351382cc4d4384f14d67b4a1382, type: 3}
+    second:
+      variants:
+      - keywords: CONVTRANSPOSE1D NONE
+        passType: 0
+  - first: {fileID: 4800000, guid: 9c81d7c8f6be1124ca35cda21d76a228, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 81eabe824afe93d449780d8235c418f7, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 6db878f4f09cdea478e3c469c5070ebc, type: 3}
+    second:
+      variants:
+      - keywords: GRIDSAMPLE1D LINEAR ZEROS
+        passType: 0
+  - first: {fileID: 4800000, guid: adaa285a80407144d8700e2cdada0126, type: 3}
+    second:
+      variants:
+      - keywords: WhereFloat
+        passType: 0
+  - first: {fileID: 4800000, guid: f9a9551ce1bacf649bf8ebce2fd5247c, type: 3}
+    second:
+      variants:
+      - keywords: TENSORFLOAT
+        passType: 0
+  - first: {fileID: 4800000, guid: 95bbecfad388985419c0d7ea707d0ddd, type: 3}
+    second:
+      variants:
+      - keywords: RoiAlignAvg
+        passType: 0
+  - first: {fileID: 4800000, guid: 01e92b6b2795b354ba57e218f2acd000, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 6126865a5c82ffe469c330dee64b2ead, type: 3}
+    second:
+      variants:
+      - keywords: ReduceNone
+        passType: 0
+  - first: {fileID: 4800000, guid: 21efdbaf368369a4c9315999314fe951, type: 3}
+    second:
+      variants:
+      - keywords: FORWARD INCLUSIVE
+        passType: 0
+  - first: {fileID: 4800000, guid: f300c79d4ed897348a3b46fc5d04b63a, type: 3}
+    second:
+      variants:
+      - keywords: ArgMin First
+        passType: 0
+  - first: {fileID: 4800000, guid: 41faa744b4574744d9dfc5f41cf2feed, type: 3}
+    second:
+      variants:
+      - keywords: EXACT
+        passType: 0
+  - first: {fileID: 4800000, guid: f556bef586df81147920236aa139c992, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 78866482fc7128b4e929cd71636834b8, type: 3}
+    second:
+      variants:
+      - keywords: Add
+        passType: 0
+  - first: {fileID: 4800000, guid: b815659d673da4345ac8fac9299ee3a2, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 6c51dba462962144995b368f08dbc85f, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 8ed47df963cf6f9409874a2ddbf1f096, type: 3}
+    second:
+      variants:
+      - keywords: SOFTMAXEND
+        passType: 0
+  - first: {fileID: 4800000, guid: f66fcb9802ce5ab41a6469acf34a53ca, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 73817e6e5c844beaa39419a1f07bbeb0, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: b56dcea8083354dd3ae2e5700ce711f6, type: 3}
+    second:
+      variants:
+      - keywords: DIRECTIONAL
+        passType: 0
+  - first: {fileID: 4800000, guid: 7a1e00f5c0a8513418c4e461d47770fe, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 502519190e12db54c8dd6a9322721a70, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 3e744168f165d504fb0f5f3e0a6ae824, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 7af3b9c40c4254e4185931e59a260def, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: d24e7f72dad0f494b9a141ca0dea0382, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: c7715b638c6f5c849a6ec12234ae264c, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 8214c1698b01bb447bb37e3dff17f335, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: b781ed308666c4ee3a3d7b13840d680c, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: b6c71c9c13df7fb4ca02d7fcdc872360, type: 3}
+    second:
+      variants:
+      - keywords: DIRECTIONAL
+        passType: 4
+      - keywords: POINT
+        passType: 5
+      - keywords: 
+        passType: 10
+      - keywords: 
+        passType: 11
+  - first: {fileID: 4800000, guid: 493b79ea9c9be44ed8b702014d3ac49c, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 9c442dc870b456e48b615cd8add0e9ef, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
