@@ -7194,7 +7194,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoutineSender
   image: {fileID: 0}
-  serverUrl: http://172.20.10.3:8000/reconstruct
+  serverUrl: http://172.20.10.3:8000
   mcResolution: 128
   removeBackground: 1
   timeoutSeconds: 120

@@ -176,10 +176,10 @@ MonoBehaviour:
     - line: '|   tvOSBundleVersion: 1.0'
     - line: '|   bundleVersion: 0.1.0'
     - line: '|   preloadedAssets:'
-    - line: '|   - {fileID: -7642403309917359206, guid: bb88001f10bfae44381b58a7849541e5, type: 2}'
     - line: '|   - {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}'
-    - line: '|   - {fileID: -4961206478571288607, guid: 990dab63f4310e943a0b6ef98bcdced1, type: 2}'
     - line: '|   - {fileID: 11400000, guid: 68802d4295ddf024d80bc4818b4f70ce, type: 2}'
+    - line: '|   - {fileID: -7642403309917359206, guid: bb88001f10bfae44381b58a7849541e5, type: 2}'
+    - line: '|   - {fileID: -4961206478571288607, guid: 990dab63f4310e943a0b6ef98bcdced1, type: 2}'
     - line: '|   metroInputSource: 0'
     - line: '|   wsaTransparentSwapchain: 0'
     - line: '|   xboxOneDisableKinectGpuReservation: 1'
@@ -209,12 +209,12 @@ MonoBehaviour:
     - line: '|     tvOS: 0'
     - line: '|   overrideDefaultApplicationIdentifier: 1'
     - line: '|   AndroidBundleVersionCode: 1'
-    - line: '|   AndroidMinSdkVersion: 29'
-    - line: '|   AndroidTargetSdkVersion: 32'
+    - line: '|   AndroidMinSdkVersion: 32'
+    - line: '|   AndroidTargetSdkVersion: 34'
     - line: '|   AndroidPreferredInstallLocation: 0'
     - line: '|   AndroidPreferredDataLocation: 1'
     - line: '|   aotOptions: '
-    - line: '|   stripEngineCode: 1'
+    - line: '|   stripEngineCode: 0'
     - line: '|   iPhoneStrippingLevel: 0'
     - line: '|   iPhoneScriptCallOptimization: 0'
     - line: '|   ForceInternetPermission: 0'
@@ -499,8 +499,12 @@ MonoBehaviour:
     - line: '|       m_SubKind: '
     - line: '|   m_BuildTargetBatching: []'
     - line: '|   m_BuildTargetShaderSettings: []'
-    - line: '|   m_BuildTargetGraphicsJobs: []'
-    - line: '|   m_BuildTargetGraphicsJobMode: []'
+    - line: '|   m_BuildTargetGraphicsJobs:'
+    - line: '|   - m_BuildTarget: AndroidPlayer'
+    - line: '|     m_GraphicsJobs: 1'
+    - line: '|   m_BuildTargetGraphicsJobMode:'
+    - line: '|   - m_BuildTarget: AndroidPlayer'
+    - line: '|     m_GraphicsJobMode: 1'
     - line: '|   m_BuildTargetGraphicsAPIs:'
     - line: '|   - m_BuildTarget: iOSSupport'
     - line: '|     m_APIs: 10000000i'
@@ -951,9 +955,9 @@ MonoBehaviour:
         m_ExportAsGoogleAndroidProject: 0
         m_DebugSymbolLevel: 1
         m_DebugSymbolFormat: 5
-        m_CurrentDeploymentTargetId: 2G0YC5ZH6H029R
+        m_CurrentDeploymentTargetId: __builtin__target_default
         m_BuildType: 2
-        m_LinkTimeOptimization: 0
+        m_LinkTimeOptimization: 1
         m_BuildAppBundle: 0
         m_ProfileableShell: 0
         m_IPAddressToConnect: 
