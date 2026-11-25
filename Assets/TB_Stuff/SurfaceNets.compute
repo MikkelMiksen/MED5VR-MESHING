@@ -1,0 +1,151 @@
+#pragma kernel Vertices
+#pragma kernel Quads
+
+// Naive surface nets over the TSDF volume.
+// Pass 1 (Vertices): one vertex per cell whose corners straddle the surface.
+// Pass 2 (Quads):    for every voxel edge that crosses the surface, join the 4 cells around it.
+
+struct Vertex
+{
+    float3 pos;   // world space
+    float3 nrm;   // world space, points out of the object (towards positive TSDF)
+};
+
+RWTexture3D<float2> _Volume;            // x = TSDF, y = weight
+RWStructuredBuffer<int> _CellIndex;     // cell -> vertex index, or -1
+RWStructuredBuffer<Vertex> _Verts;
+RWStructuredBuffer<uint3> _Tris;
+RWStructuredBuffer<uint> _Counters;     // [0] vertices, [1] triangles
+
+int3 _Res;
+float4x4 _VoxelToWorld;
+float _MinWeight;
+uint _MaxVerts;
+uint _MaxTris;
+
+static const int2 EDGES[12] =
+{
+    int2(0, 1), int2(2, 3), int2(4, 5), int2(6, 7),
+    int2(0, 2), int2(1, 3), int2(4, 6), int2(5, 7),
+    int2(0, 4), int2(1, 5), int2(2, 6), int2(3, 7)
+};
+
+static const int3 AX[3] = { int3(1, 0, 0), int3(0, 1, 0), int3(0, 0, 1) };
+
+int Lin(int3 c) { return c.x + _Res.x * (c.y + _Res.y * c.z); }
+int3 CP(int i) { return int3(i & 1, (i >> 1) & 1, (i >> 2) & 1); }
+bool CellOk(int3 c) { return all(c >= 0) && all(c <= _Res - 2); }
+
+[numthreads(8, 8, 8)]
+void Vertices(uint3 id : SV_DispatchThreadID)
+{
+    if (any(id >= (uint3)(_Res - 1))) return;
+
+    int3 cell = (int3)id;
+    int lin = Lin(cell);
+
+    float v[8];
+    int mask = 0;
+    [unroll]
+    for (int i = 0; i < 8; i++)
+    {
+        float2 s = _Volume[uint3(cell + CP(i))];
+        if (s.y < _MinWeight) { _CellIndex[lin] = -1; return; }   // unobserved: no surface here
+        v[i] = s.x;
+        if (s.x < 0.0) mask |= (1 << i);
+    }
+
+    if (mask == 0 || mask == 255) { _CellIndex[lin] = -1; return; }
+
+    float3 sum = 0;
+    int n = 0;
+    [unroll]
+    for (int e = 0; e < 12; e++)
+    {
+        int a = EDGES[e].x;
+        int b = EDGES[e].y;
+        if (((mask >> a) & 1) != ((mask >> b) & 1))
+        {
+            float t = v[a] / (v[a] - v[b]);
+            sum += lerp((float3)CP(a), (float3)CP(b), t);
+            n++;
+        }
+    }
+
+    float3 p = (float3)cell + sum / n;
+
+    float3 g;
+    g.x = (v[1] - v[0]) + (v[3] - v[2]) + (v[5] - v[4]) + (v[7] - v[6]);
+    g.y = (v[2] - v[0]) + (v[3] - v[1]) + (v[6] - v[4]) + (v[7] - v[5]);
+    g.z = (v[4] - v[0]) + (v[5] - v[1]) + (v[6] - v[2]) + (v[7] - v[3]);
+
+    float3 wn = mul((float3x3)_VoxelToWorld, g);
+    float len = length(wn);
+    wn = len > 1e-6 ? wn / len : float3(0, 1, 0);
+
+    uint idx;
+    InterlockedAdd(_Counters[0], 1, idx);
+    if (idx >= _MaxVerts) { _CellIndex[lin] = -1; return; }
+
+    Vertex vt;
+    vt.pos = mul(_VoxelToWorld, float4(p, 1.0)).xyz;
+    vt.nrm = wn;
+    _Verts[idx] = vt;
+    _CellIndex[lin] = (int)idx;
+}
+
+void AddTri(uint i0, uint i1, uint i2, float3 outward)
+{
+    // Unity treats clockwise triangles as front-facing, and cross(e1, e2) then points at the viewer.
+    // Flip the triangle if its normal points into the object.
+    float3 n = cross(_Verts[i1].pos - _Verts[i0].pos, _Verts[i2].pos - _Verts[i0].pos);
+    if (dot(n, outward) < 0.0)
+    {
+        uint t = i1; i1 = i2; i2 = t;
+    }
+
+    uint ti;
+    InterlockedAdd(_Counters[1], 1, ti);
+    if (ti < _MaxTris) _Tris[ti] = uint3(i0, i1, i2);
+}
+
+[numthreads(8, 8, 8)]
+void Quads(uint3 id : SV_DispatchThreadID)
+{
+    if (any(id >= (uint3)_Res)) return;
+
+    int3 p = (int3)id;
+    float2 s0 = _Volume[id];
+    if (s0.y < _MinWeight) return;
+
+    [unroll]
+    for (int a = 0; a < 3; a++)
+    {
+        int3 ea = AX[a];
+        int3 eb = AX[(a + 1) % 3];
+        int3 ec = AX[(a + 2) % 3];
+
+        int3 q = p + ea;
+        if (any(q >= _Res)) continue;
+
+        float2 s1 = _Volume[uint3(q)];
+        if (s1.y < _MinWeight) continue;
+        if ((s0.x < 0.0) == (s1.x < 0.0)) continue;   // no surface crossing on this edge
+
+        int3 cA = p;
+        int3 cB = p - eb;
+        int3 cC = p - eb - ec;
+        int3 cD = p - ec;
+        if (!CellOk(cA) || !CellOk(cB) || !CellOk(cC) || !CellOk(cD)) continue;
+
+        int iA = _CellIndex[Lin(cA)];
+        int iB = _CellIndex[Lin(cB)];
+        int iC = _CellIndex[Lin(cC)];
+        int iD = _CellIndex[Lin(cD)];
+        if (iA < 0 || iB < 0 || iC < 0 || iD < 0) continue;
+
+        float3 outward = _Verts[iA].nrm;
+        AddTri((uint)iA, (uint)iB, (uint)iC, outward);
+        AddTri((uint)iA, (uint)iC, (uint)iD, outward);
+    }
+}

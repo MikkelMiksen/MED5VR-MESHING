@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 /// Step 3: owns the TSDF volume and runs the fusion kernel.
-/// Locking the ScanBounds box starts a scan (allocates and clears the volume).
-/// Unlocking the box discards the volume, because moving the box invalidates it.
+/// Left middle-finger pinch (ScanBounds) locks the box: that starts a scan.
+/// Right middle-finger pinch pauses / resumes scanning. The volume and mesh are kept while paused.
+/// Unlocking the box discards everything, because moving the box invalidates the volume.
 public class TSDFVolume : MonoBehaviour
 {
     [Header("References")]
@@ -12,9 +13,10 @@ public class TSDFVolume : MonoBehaviour
     public ComputeShader compute;
     public OVRSkeleton leftSkeleton;
     public OVRSkeleton rightSkeleton;
+    public OVRHand rightHand;          // used for the pause / resume gesture
 
     [Header("Fusion")]
-    [Range(1, 30)] public float updatesPerSecond = 15f;
+    [Range(1, 30)] public float updatesPerSecond = 10f;
     public float truncationInVoxels = 4f;
     public float maxWeight = 64f;
     public float minRange = 0.3f;
@@ -35,10 +37,15 @@ public class TSDFVolume : MonoBehaviour
     public float Truncation { get; private set; }
     public Matrix4x4 VoxelToWorld { get; private set; }
     public bool Active { get; private set; }
+    public bool Paused { get; private set; }
+    public int Version { get; private set; }   // increments every time new depth is fused
 
     int kClear, kIntegrate, kCount;
     ComputeBuffer counters;
     bool countPending;
+    bool pauseGestureWasDown;
+    bool warnedDepth;
+    float scanStartTime;
     float nextFuseTime, nextStatsTime;
     readonly Vector4[] handSpheres = new Vector4[16];
 
@@ -58,7 +65,21 @@ public class TSDFVolume : MonoBehaviour
         else if (!shouldScan && Active) End();
         if (!Active) return;
 
-        if (Time.time < nextFuseTime || !depth.IsReady) return;
+        HandlePauseGesture();
+        if (Paused) return;
+
+        if (!depth.IsReady)
+        {
+            if (!warnedDepth && Time.time - scanStartTime > 3f)
+            {
+                warnedDepth = true;
+                Debug.LogWarning("TSDF: depth has not become available 3 s after the scan started. " +
+                                 "Check the Scene permission, that the graphics API is Vulkan, and that " +
+                                 "Passthrough over Link is on.");
+            }
+            return;
+        }
+        if (Time.time < nextFuseTime) return;
         nextFuseTime = Time.time + 1f / updatesPerSecond;
         Fuse();
 
@@ -67,6 +88,22 @@ public class TSDFVolume : MonoBehaviour
             nextStatsTime = Time.time + 1f;
             RequestStats();
         }
+    }
+
+    void HandlePauseGesture()
+    {
+        bool down = rightHand != null && rightHand.IsTracked &&
+                    rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle);
+        if (down && !pauseGestureWasDown) SetPaused(!Paused);
+        pauseGestureWasDown = down;
+    }
+
+    public void SetPaused(bool paused)
+    {
+        if (!Active || paused == Paused) return;
+        Paused = paused;
+        depth.SetCapturing(!paused);
+        Debug.Log(paused ? "Scan paused (mesh kept)." : "Scan resumed.");
     }
 
     void Begin()
@@ -89,10 +126,15 @@ public class TSDFVolume : MonoBehaviour
 
         counters = new ComputeBuffer(2, sizeof(uint));
 
-        SetCommon(kClear);
+        SetCommon();
         compute.SetTexture(kClear, "_Volume", Volume);
         Dispatch(kClear);
 
+        Version = 0;
+        warnedDepth = false;
+        scanStartTime = Time.time;
+        Paused = false;
+        pauseGestureWasDown = true;   // ignore a pinch that was already held when scanning started
         depth.SetCapturing(true);
         Active = true;
         Debug.Log($"TSDF scan started: {res.x}x{res.y}x{res.z} voxels, voxel size {voxelSize * 1000f:F1} mm, " +
@@ -103,6 +145,7 @@ public class TSDFVolume : MonoBehaviour
     {
         if (!Active && Volume == null) return;
         Active = false;
+        Paused = false;
         if (depth != null) depth.SetCapturing(false);
         AsyncGPUReadback.WaitAllRequests();
         countPending = false;
@@ -110,7 +153,7 @@ public class TSDFVolume : MonoBehaviour
         if (Volume != null) { Volume.Release(); Destroy(Volume); Volume = null; }
     }
 
-    void SetCommon(int kernel)
+    void SetCommon()
     {
         compute.SetInts("_Res", Resolution.x, Resolution.y, Resolution.z);
         compute.SetMatrix("_VoxelToWorld", VoxelToWorld);
@@ -128,7 +171,7 @@ public class TSDFVolume : MonoBehaviour
     {
         if (!depth.BindToCompute(compute, kIntegrate)) return;
 
-        SetCommon(kIntegrate);
+        SetCommon();
         compute.SetTexture(kIntegrate, "_Volume", Volume);
         compute.SetFloat("_Truncation", Truncation);
         compute.SetFloat("_MaxWeight", maxWeight);
@@ -143,6 +186,7 @@ public class TSDFVolume : MonoBehaviour
         compute.SetVectorArray("_HandSpheres", handSpheres);
 
         Dispatch(kIntegrate);
+        Version++;
     }
 
     // ---- hand masking -------------------------------------------------------------------
@@ -193,7 +237,7 @@ public class TSDFVolume : MonoBehaviour
     void RequestStats()
     {
         counters.SetData(new uint[2]);
-        SetCommon(kCount);
+        SetCommon();
         compute.SetTexture(kCount, "_Volume", Volume);
         compute.SetBuffer(kCount, "_Counters", counters);
         Dispatch(kCount);

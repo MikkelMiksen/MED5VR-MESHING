@@ -401,6 +401,7 @@ MonoBehaviour:
   compute: {fileID: 7200000, guid: 02a53e1c1a1654f40abf377cb15a5089, type: 3}
   leftSkeleton: {fileID: 527206354}
   rightSkeleton: {fileID: 2083251308}
+  rightHand: {fileID: 2083251309}
   updatesPerSecond: 10
   truncationInVoxels: 4
   maxWeight: 64
@@ -912,6 +913,58 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1760678355}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1425489882
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1425489883}
+  - component: {fileID: 1425489884}
+  m_Layer: 0
+  m_Name: SurfaceMesher
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1425489883
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1425489882}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.01978, y: -0.01497, z: 0.04964}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1425489884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1425489882}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bda65e1e647c1aa448c00b051b06b2ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurfaceMesher
+  volume: {fileID: 464127297}
+  compute: {fileID: 7200000, guid: 2442525649e119d4ca660fa9ca886d00, type: 3}
+  material: {fileID: 2100000, guid: 7f1dfa2ecc83e6b41b3acd2c6e5c386a, type: 2}
+  meshInterval: 0.5
+  minWeight: 2
+  maxVertices: 200000
+  maxTriangles: 400000
+  logStats: 1
 --- !u!1 &1523002801
 GameObject:
   m_ObjectHideFlags: 0
@@ -1658,3 +1711,4 @@ SceneRoots:
   - {fileID: 1233040731}
   - {fileID: 2138103236}
   - {fileID: 464127298}
+  - {fileID: 1425489883}
