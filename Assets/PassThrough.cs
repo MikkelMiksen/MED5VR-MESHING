@@ -81,8 +81,10 @@ public class PassThrough : MonoBehaviour
 
         //m_cameraSnapshot.ReadPixels(regionToReadFrom, 0, 0); //Needs testing if works. - Test with LoadRawTextureData
         
-        var currentImage = Instantiate(imagePrefab, parentCanvas.transform);
-        currentImage.transform.position = controller.position;
+
+        //var currentImage = Instantiate(imagePrefab, parentCanvas.transform);
+        //currentImage.transform.position = controller.position;
+
 
         m_cameraSnapshot.LoadRawTextureData(m_cameraAccess.GetColors()); //det her virker også fint, den burde give mig et 1280 x 960 resolution texture
 
@@ -117,7 +119,9 @@ public class PassThrough : MonoBehaviour
         //var bytes = result.EncodeToPNG();
         //File.WriteAllBytes(Application.dataPath + "/../SavedScreen.png", bytes);
         m_image.texture = result;
-        currentImage.GetComponent<RawImage>().texture = result;
+
+        //currentImage.GetComponent<RawImage>().texture = result;
+
         StartCoroutine(m_routineSender.SendImage(result));
         /*
         Normalize Yolo coordinates
