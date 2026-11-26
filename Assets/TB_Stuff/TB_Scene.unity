@@ -398,7 +398,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TSDFVolume
   bounds: {fileID: 2138103237}
   depth: {fileID: 1233040732}
-  compute: {fileID: 7200000, guid: 02a53e1c1a1654f40abf377cb15a5089, type: 3}
+  compute: {fileID: 7200000, guid: 220535604583567459a74e65904fff04, type: 3}
   leftSkeleton: {fileID: 527206354}
   rightSkeleton: {fileID: 2083251308}
   rightHand: {fileID: 2083251309}
@@ -408,10 +408,12 @@ MonoBehaviour:
   minRange: 0.3
   maxRange: 1.5
   edgeThreshold: 0.05
-  flipY: 0
+  flipY: 1
   handRadius: 0.08
   fingertipRadius: 0.05
   logStats: 1
+  logToConsole: 0
+  statsInterval: 2
 --- !u!4 &464127298
 Transform:
   m_ObjectHideFlags: 0
@@ -1078,6 +1080,59 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1536070600
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1536070601}
+  - component: {fileID: 1536070602}
+  m_Layer: 0
+  m_Name: Hud
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1536070601
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1536070600}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.01978, y: -0.01497, z: 0.04964}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1536070602
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1536070600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4363fe2c1d03b1a4da036a5950ff92cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScanHud
+  bounds: {fileID: 2138103237}
+  volume: {fileID: 464127297}
+  mesher: {fileID: 1425489884}
+  depth: {fileID: 1233040732}
+  head: {fileID: 0}
+  heightAboveBox: 0.08
+  characterSize: 0.003
+  fontSize: 64
+  refreshRate: 4
 --- !u!1 &1537825052
 GameObject:
   m_ObjectHideFlags: 0
@@ -1712,3 +1767,4 @@ SceneRoots:
   - {fileID: 2138103236}
   - {fileID: 464127298}
   - {fileID: 1425489883}
+  - {fileID: 1536070601}

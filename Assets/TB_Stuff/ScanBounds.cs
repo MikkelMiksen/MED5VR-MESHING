@@ -25,6 +25,9 @@ public class ScanBounds : MonoBehaviour
 
     public bool Locked { get; private set; }
 
+    Color lockedColor = Color.green;
+    public void SetLockedColor(Color c) { lockedColor = c; UpdateVisual(); }
+
     LineRenderer line;
     Matrix4x4 grabOffset;
     int prevMode;            // 0 none, 1 grab, 2 two-hand corners
@@ -133,7 +136,7 @@ public class ScanBounds : MonoBehaviour
             new Vector3( h.x,  h.y,  h.z), new Vector3(-h.x,  h.y,  h.z),
         };
         for (int i = 0; i < PathOrder.Length; i++) line.SetPosition(i, c[PathOrder[i]]);
-        Color col = Locked ? Color.green : Color.yellow;
+        Color col = Locked ? lockedColor : Color.yellow;
         line.startColor = col;
         line.endColor = col;
     }

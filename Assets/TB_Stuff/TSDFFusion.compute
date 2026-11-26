@@ -6,6 +6,7 @@
 RWTexture3D<float2> _Volume;
 Texture2DArray<float> _DepthTex;
 RWStructuredBuffer<uint> _Counters;   // [0] observed voxels, [1] near-surface voxels
+RWStructuredBuffer<uint> _Debug;      // see Dbg() below
 
 int3 _Res;
 float4x4 _VoxelToWorld;
@@ -18,8 +19,22 @@ float _MaxRange;
 float _EdgeThreshold;   // relative depth jump between neighbouring pixels
 int _DepthSize;
 int _FlipY;
+int _DebugOn;
 int _HandCount;
 float4 _HandSpheres[16];   // xyz = world position, w = radius
+
+// Debug counters (voxel/eye pairs), only written when _DebugOn != 0:
+// 0 projected inside depth image, 1 valid depth sample, 2 rejected by edge test,
+// 3 behind surface (< -truncation), 4 within truncation band, 5 in front (> truncation),
+// 6 sum of voxel depth in mm, 7 sum of sampled depth in mm, 8 sampled depth out of range
+void Dbg(int i, uint v)
+{
+    if (_DebugOn != 0)
+    {
+        uint o;
+        InterlockedAdd(_Debug[i], v, o);
+    }
+}
 
 // Same formula as Meta's depth shader library.
 float LinearDepth(float ndc)
@@ -64,24 +79,64 @@ void Integrate(uint3 id : SV_DispatchThreadID)
         float4 clip = mul(_DepthReprojection[eye], float4(wp, 1.0));
         if (clip.w <= 0.0) continue;
 
-        float2 uv = clip.xy / clip.w * 0.5 + 0.5;
+        float2 uv0 = clip.xy / clip.w * 0.5 + 0.5;
+        float2 uv = uv0;
         if (_FlipY != 0) uv.y = 1.0 - uv.y;
         if (any(uv < 0.0) || any(uv >= 1.0)) continue;
+        Dbg(0, 1);
 
         int2 px = int2(uv * _DepthSize);
         float d = LoadLinear(px, eye);
-        if (!(d > _MinRange && d < _MaxRange)) continue;   // also rejects NaN / infinite
+
+        if (_DebugOn != 0)
+        {
+            // Histogram of what the depth image says at this voxel's pixel (metres)
+            int bucket = (!isfinite(d) || d < 0.0) ? 0 : d < 0.3 ? 1 : d < 0.5 ? 2 : d < 0.8 ? 3 :
+                         d < 1.1 ? 4 : d < 1.5 ? 5 : d < 3.0 ? 6 : 7;
+            Dbg(9 + bucket, 1);
+
+            // Which UV orientation produces surface hits? 0 as-is, 1 flip X, 2 flip Y, 3 flip both
+            [unroll]
+            for (int variant = 0; variant < 4; variant++)
+            {
+                float2 uvv = uv0;
+                if ((variant & 1) != 0) uvv.x = 1.0 - uvv.x;
+                if ((variant & 2) != 0) uvv.y = 1.0 - uvv.y;
+                if (any(uvv < 0.0) || any(uvv >= 1.0)) continue;
+                float dv = LoadLinear(int2(uvv * _DepthSize), eye);
+                if (dv > _MinRange && dv < _MaxRange && abs(dv - clip.w) <= _Truncation)
+                    Dbg(17 + variant, 1);
+            }
+        }
+        if (!(d > _MinRange && d < _MaxRange))   // also rejects NaN / infinite
+        {
+            Dbg(8, 1);
+            continue;
+        }
+        Dbg(1, 1);
+        Dbg(6, (uint)(clip.w * 1000.0));
+        Dbg(7, (uint)(d * 1000.0));
 
         // Silhouette / noisy edge rejection
         float tol = _EdgeThreshold * d;
-        if (abs(LoadLinear(px + int2(1, 0), eye) - d) > tol) continue;
-        if (abs(LoadLinear(px - int2(1, 0), eye) - d) > tol) continue;
-        if (abs(LoadLinear(px + int2(0, 1), eye) - d) > tol) continue;
-        if (abs(LoadLinear(px - int2(0, 1), eye) - d) > tol) continue;
+        bool edge = abs(LoadLinear(px + int2(1, 0), eye) - d) > tol
+                 || abs(LoadLinear(px - int2(1, 0), eye) - d) > tol
+                 || abs(LoadLinear(px + int2(0, 1), eye) - d) > tol
+                 || abs(LoadLinear(px - int2(0, 1), eye) - d) > tol;
+        if (edge)
+        {
+            Dbg(2, 1);
+            continue;
+        }
 
         // clip.w is the voxel's linear depth in the depth camera (matches the linearized sample)
         float sdf = d - clip.w;
-        if (sdf < -_Truncation) continue;   // behind the surface: unknown
+        if (sdf < -_Truncation)   // behind the surface: unknown
+        {
+            Dbg(3, 1);
+            continue;
+        }
+        if (sdf > _Truncation) Dbg(5, 1); else Dbg(4, 1);
 
         acc += clamp(sdf / _Truncation, -1.0, 1.0);
         accW += 1.0;

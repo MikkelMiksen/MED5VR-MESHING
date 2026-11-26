@@ -29,7 +29,9 @@ public class TSDFVolume : MonoBehaviour
     public float fingertipRadius = 0.05f;
 
     [Header("Debug")]
-    public bool logStats = true;
+    public bool logStats = true;        // collect scan statistics (the headset readout needs these)
+    public bool logToConsole = false;   // also print them to the console
+    public float statsInterval = 2f;    // seconds between statistics passes (higher = cheaper)
 
     public RenderTexture Volume { get; private set; }
     public Vector3Int Resolution { get; private set; }
@@ -40,9 +42,17 @@ public class TSDFVolume : MonoBehaviour
     public bool Paused { get; private set; }
     public int Version { get; private set; }   // increments every time new depth is fused
 
+    // Latest statistics, for the in-headset readout
+    public uint[] LastDebug { get; } = new uint[21];
+    public uint LastObserved { get; private set; }
+    public uint LastNearSurface { get; private set; }
+    public long LastTotalVoxels { get; private set; }
+
     int kClear, kIntegrate, kCount;
     ComputeBuffer counters;
+    ComputeBuffer debugBuffer;
     bool countPending;
+    bool debugPending;
     bool pauseGestureWasDown;
     bool warnedDepth;
     float scanStartTime;
@@ -81,11 +91,12 @@ public class TSDFVolume : MonoBehaviour
         }
         if (Time.time < nextFuseTime) return;
         nextFuseTime = Time.time + 1f / updatesPerSecond;
-        Fuse();
+        bool statsFrame = logStats && Time.time >= nextStatsTime && !countPending && !debugPending;
+        Fuse(statsFrame);
 
-        if (logStats && Time.time >= nextStatsTime && !countPending)
+        if (statsFrame)
         {
-            nextStatsTime = Time.time + 1f;
+            nextStatsTime = Time.time + statsInterval;
             RequestStats();
         }
     }
@@ -125,6 +136,7 @@ public class TSDFVolume : MonoBehaviour
         Volume.Create();
 
         counters = new ComputeBuffer(2, sizeof(uint));
+        debugBuffer = new ComputeBuffer(21, sizeof(uint));
 
         SetCommon();
         compute.SetTexture(kClear, "_Volume", Volume);
@@ -149,7 +161,9 @@ public class TSDFVolume : MonoBehaviour
         if (depth != null) depth.SetCapturing(false);
         AsyncGPUReadback.WaitAllRequests();
         countPending = false;
+        debugPending = false;
         if (counters != null) { counters.Release(); counters = null; }
+        if (debugBuffer != null) { debugBuffer.Release(); debugBuffer = null; }
         if (Volume != null) { Volume.Release(); Destroy(Volume); Volume = null; }
     }
 
@@ -167,7 +181,7 @@ public class TSDFVolume : MonoBehaviour
             Mathf.CeilToInt(Resolution.z / 8f));
     }
 
-    void Fuse()
+    void Fuse(bool debug)
     {
         if (!depth.BindToCompute(compute, kIntegrate)) return;
 
@@ -185,8 +199,14 @@ public class TSDFVolume : MonoBehaviour
         compute.SetInt("_HandCount", hands);
         compute.SetVectorArray("_HandSpheres", handSpheres);
 
+        compute.SetBuffer(kIntegrate, "_Debug", debugBuffer);
+        compute.SetInt("_DebugOn", debug ? 1 : 0);
+        if (debug) debugBuffer.SetData(new uint[21]);
+
         Dispatch(kIntegrate);
         Version++;
+
+        if (debug) RequestFuseDebug();
     }
 
     // ---- hand masking -------------------------------------------------------------------
@@ -234,6 +254,27 @@ public class TSDFVolume : MonoBehaviour
 
     // ---- debug stats --------------------------------------------------------------------
 
+    void RequestFuseDebug()
+    {
+        debugPending = true;
+        AsyncGPUReadback.Request(debugBuffer, req =>
+        {
+            debugPending = false;
+            if (req.hasError) return;
+            var d = req.GetData<uint>();
+            for (int i = 0; i < LastDebug.Length; i++) LastDebug[i] = d[i];
+            if (!logToConsole) return;
+            float avgVoxel = d[1] > 0 ? (float)d[6] / d[1] : 0f;
+            float avgSampled = d[1] > 0 ? (float)d[7] / d[1] : 0f;
+            Debug.Log($"Fuse debug (voxel/eye pairs): in image {d[0]}, depth out of range {d[8]}, valid {d[1]}, " +
+                      $"edge-rejected {d[2]}, behind surface {d[3]}, within band {d[4]}, in front {d[5]}, " +
+                      $"avg voxel depth {avgVoxel:F0} mm, avg sampled depth {avgSampled:F0} mm\n" +
+                      $"Depth histogram at box pixels: invalid {d[9]}, <0.3m {d[10]}, 0.3-0.5m {d[11]}, " +
+                      $"0.5-0.8m {d[12]}, 0.8-1.1m {d[13]}, 1.1-1.5m {d[14]}, 1.5-3m {d[15]}, >3m {d[16]}");
+            Debug.Log($"UV orientation test (surface hits): as-is {d[17]}, flipX {d[18]}, flipY {d[19]}, flipXY {d[20]}");
+        });
+    }
+
     void RequestStats()
     {
         counters.SetData(new uint[2]);
@@ -249,8 +290,12 @@ public class TSDFVolume : MonoBehaviour
             countPending = false;
             if (req.hasError) return;
             var d = req.GetData<uint>();
-            Debug.Log($"TSDF: observed {d[0]} / {total} voxels ({100f * d[0] / total:F1}%), " +
-                      $"near surface: {d[1]}");
+            LastObserved = d[0];
+            LastNearSurface = d[1];
+            LastTotalVoxels = total;
+            if (logToConsole)
+                Debug.Log($"TSDF: observed {d[0]} / {total} voxels ({100f * d[0] / total:F1}%), " +
+                          $"near surface: {d[1]}");
         });
     }
 }

@@ -19,9 +19,11 @@ public class SurfaceMesher : MonoBehaviour
     public float minWeight = 2f;       // voxels seen fewer times than this are ignored
     public int maxVertices = 200000;
     public int maxTriangles = 400000;
-    public bool logStats = true;
+    public bool logStats = false;
 
     public Mesh Mesh { get; private set; }
+    public int LastVertexCount { get; private set; }
+    public int LastTriangleCount { get; private set; }
 
     [StructLayout(LayoutKind.Sequential)]
     struct Vertex { public Vector3 position; public Vector3 normal; }
@@ -154,6 +156,8 @@ public class SurfaceMesher : MonoBehaviour
         var c = req.GetData<uint>();
         int nv = (int)System.Math.Min(c[0], (uint)maxVertices);
         int nt = (int)System.Math.Min(c[1], (uint)maxTriangles);
+        LastVertexCount = nv;
+        LastTriangleCount = nt;
         if (logStats) Debug.Log($"Meshing pass: {c[0]} vertices, {c[1]} triangles");
         if (nv == 0 || nt == 0)
         {
