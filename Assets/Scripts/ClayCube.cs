@@ -22,7 +22,7 @@ using UnityEngine;
 ///    stored for undo.
 ///
 /// Undo:
-///  - Left hand: pinch thumb + middle finger and hold ~0.35 s, with that hand away from the cube
+///  - Left hand: pinch thumb + ring finger (configurable) and hold ~0.35 s, with that hand away from the cube
 ///  - Left controller: X button
 ///  - Or call Undo() from your own UI button
 ///
@@ -42,6 +42,10 @@ public class ClayCube : MonoBehaviour
     [Header("Hands")]
     public OVRSkeleton leftSkeleton;
     public OVRSkeleton rightSkeleton;
+
+    [Header("Mode")]
+    [Tooltip("When false, hands pass through the clay without carving (used while placing the cube).")]
+    public bool sculptingEnabled = true;
 
     [Header("Hand collision (meters)")]
     public float fingerRadius = 0.009f;
@@ -65,6 +69,8 @@ public class ClayCube : MonoBehaviour
     public float undoMinHandDistance = 0.12f;
     public float undoPinchOn = 0.020f;
     public float undoPinchOff = 0.035f;
+    [Tooltip("Left-hand fingertip that pinches with the thumb to undo. (Middle is used by ClayCubeMover to switch modes.)")]
+    public OVRSkeleton.BoneId undoFingerTip = OVRSkeleton.BoneId.Hand_RingTip;
 
     // ---- hand model
     static readonly OVRSkeleton.BoneId[][] fingerChains =
@@ -251,6 +257,7 @@ public class ClayCube : MonoBehaviour
 
         ProcessHand(rightSkeleton, handR);
         ProcessHand(leftSkeleton, handL);
+        if (!sculptingEnabled) capsuleCount = 0; // placement mode: hands don't touch the clay
 
         UpdateUndoGesture(dt);
         if (OVRInput.GetDown(OVRInput.Button.Three)) Undo(); // left controller X
@@ -335,7 +342,7 @@ public class ClayCube : MonoBehaviour
         hs.tracked = true;
         int wr = (int)OVRSkeleton.BoneId.Hand_WristRoot;
         int tt = (int)OVRSkeleton.BoneId.Hand_ThumbTip;
-        int mt = (int)OVRSkeleton.BoneId.Hand_MiddleTip;
+        int mt = (int)undoFingerTip;
         if (boneHave[wr]) hs.wrist = bonePos[wr];
         hs.thumbMiddle = (boneHave[tt] && boneHave[mt]) ? Vector3.Distance(bonePos[tt], bonePos[mt]) : 1f;
 
