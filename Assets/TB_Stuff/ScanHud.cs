@@ -126,6 +126,17 @@ public class ScanHud : MonoBehaviour
             }
         }
 
+        if (volume != null && volume.HasProbe)
+        {
+            float[] p = volume.LastProbe;
+            sb.Append("\nahead 1m  L: w ").Append(p[0].ToString("F2"))
+              .Append(" uv ").Append(p[1].ToString("F2")).Append(',').Append(p[2].ToString("F2"))
+              .Append(" depth ").Append(p[3] < 0f ? "-" : p[3].ToString("F2")).Append('m');
+            sb.Append("\nahead 1m  R: w ").Append(p[4].ToString("F2"))
+              .Append(" uv ").Append(p[5].ToString("F2")).Append(',').Append(p[6].ToString("F2"))
+              .Append(" depth ").Append(p[7] < 0f ? "-" : p[7].ToString("F2")).Append('m');
+        }
+
         textMesh.text = sb.ToString();
     }
 }

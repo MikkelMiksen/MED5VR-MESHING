@@ -1,6 +1,7 @@
 #pragma kernel Clear
 #pragma kernel Integrate
 #pragma kernel Count
+#pragma kernel Probe
 
 // x = TSDF value in [-1, 1] (positive = in front of surface), y = accumulated weight
 RWTexture3D<float2> _Volume;
@@ -10,6 +11,9 @@ RWStructuredBuffer<uint> _Debug;      // see Dbg() below
 
 int3 _Res;
 float4x4 _VoxelToWorld;
+float4x4 _WorldToDepth;      // identity, unless the depth matrices expect tracking-space coordinates
+RWStructuredBuffer<float> _ProbeOut;   // per eye: w, u, v, depth
+float4 _ProbeWorld;
 float4x4 _DepthReprojection[2];
 float4 _DepthZBufferParams;
 float _Truncation;      // metres
@@ -70,13 +74,15 @@ void Integrate(uint3 id : SV_DispatchThreadID)
         if (dot(d3, d3) < s.w * s.w) return;
     }
 
+    float3 dp = mul(_WorldToDepth, float4(wp, 1.0)).xyz;
+
     float acc = 0.0;
     float accW = 0.0;
 
     [unroll]
     for (int eye = 0; eye < 2; eye++)
     {
-        float4 clip = mul(_DepthReprojection[eye], float4(wp, 1.0));
+        float4 clip = mul(_DepthReprojection[eye], float4(dp, 1.0));
         if (clip.w <= 0.0) continue;
 
         float2 uv0 = clip.xy / clip.w * 0.5 + 0.5;
@@ -160,4 +166,27 @@ void Count(uint3 id : SV_DispatchThreadID)
         InterlockedAdd(_Counters[0], 1);
         if (abs(v.x) < 0.25) InterlockedAdd(_Counters[1], 1);
     }
+}
+
+// Projects one world-space point into each eye's depth image and reads the depth there.
+// If the matrices are in world space, a point 1 m ahead of the head gives w close to 1 and uv near 0.5, 0.5.
+[numthreads(2, 1, 1)]
+void Probe(uint3 id : SV_DispatchThreadID)
+{
+    int eye = (int)id.x;
+    if (eye > 1) return;
+
+    float3 dp = mul(_WorldToDepth, float4(_ProbeWorld.xyz, 1.0)).xyz;
+    float4 clip = mul(_DepthReprojection[eye], float4(dp, 1.0));
+    float2 uv = clip.xy / clip.w * 0.5 + 0.5;
+    if (_FlipY != 0) uv.y = 1.0 - uv.y;
+
+    float d = -1.0;
+    if (clip.w > 0.0 && all(uv >= 0.0) && all(uv < 1.0))
+        d = LoadLinear(int2(uv * _DepthSize), eye);
+
+    _ProbeOut[eye * 4 + 0] = clip.w;
+    _ProbeOut[eye * 4 + 1] = uv.x;
+    _ProbeOut[eye * 4 + 2] = uv.y;
+    _ProbeOut[eye * 4 + 3] = d;
 }

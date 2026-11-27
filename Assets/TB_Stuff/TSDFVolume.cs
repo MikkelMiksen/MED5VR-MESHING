@@ -28,6 +28,11 @@ public class TSDFVolume : MonoBehaviour
     public float handRadius = 0.08f;       // wrist and knuckle
     public float fingertipRadius = 0.05f;
 
+    [Header("Depth space (see the 'ahead' readout)")]
+    public bool useTrackingSpace = false;   // tick if the depth matrices turn out to expect tracking-space coordinates
+    public Transform trackingSpace;         // OVRCameraRig/TrackingSpace
+    public Transform head;                  // leave empty to use Camera.main
+
     [Header("Debug")]
     public bool logStats = true;        // collect scan statistics (the headset readout needs these)
     public bool logToConsole = false;   // also print them to the console
@@ -48,11 +53,16 @@ public class TSDFVolume : MonoBehaviour
     public uint LastNearSurface { get; private set; }
     public long LastTotalVoxels { get; private set; }
 
-    int kClear, kIntegrate, kCount;
+    int kClear, kIntegrate, kCount, kProbe;
     ComputeBuffer counters;
     ComputeBuffer debugBuffer;
     bool countPending;
     bool debugPending;
+    ComputeBuffer probeBuffer;
+    bool probePending;
+    float nextProbeTime;
+    public float[] LastProbe { get; } = new float[8];   // per eye: w, u, v, depth
+    public bool HasProbe { get; private set; }
     bool pauseGestureWasDown;
     bool warnedDepth;
     float scanStartTime;
@@ -64,6 +74,7 @@ public class TSDFVolume : MonoBehaviour
         kClear = compute.FindKernel("Clear");
         kIntegrate = compute.FindKernel("Integrate");
         kCount = compute.FindKernel("Count");
+        kProbe = compute.FindKernel("Probe");
     }
 
     void OnDisable() { End(); }
@@ -89,6 +100,7 @@ public class TSDFVolume : MonoBehaviour
             }
             return;
         }
+        UpdateProbe();
         if (Time.time < nextFuseTime) return;
         nextFuseTime = Time.time + 1f / updatesPerSecond;
         bool statsFrame = logStats && Time.time >= nextStatsTime && !countPending && !debugPending;
@@ -137,6 +149,8 @@ public class TSDFVolume : MonoBehaviour
 
         counters = new ComputeBuffer(2, sizeof(uint));
         debugBuffer = new ComputeBuffer(21, sizeof(uint));
+        probeBuffer = new ComputeBuffer(8, sizeof(float));
+        HasProbe = false;
 
         SetCommon();
         compute.SetTexture(kClear, "_Volume", Volume);
@@ -164,6 +178,9 @@ public class TSDFVolume : MonoBehaviour
         debugPending = false;
         if (counters != null) { counters.Release(); counters = null; }
         if (debugBuffer != null) { debugBuffer.Release(); debugBuffer = null; }
+        probePending = false;
+        HasProbe = false;
+        if (probeBuffer != null) { probeBuffer.Release(); probeBuffer = null; }
         if (Volume != null) { Volume.Release(); Destroy(Volume); Volume = null; }
     }
 
@@ -199,6 +216,7 @@ public class TSDFVolume : MonoBehaviour
         compute.SetInt("_HandCount", hands);
         compute.SetVectorArray("_HandSpheres", handSpheres);
 
+        compute.SetMatrix("_WorldToDepth", WorldToDepthMatrix());
         compute.SetBuffer(kIntegrate, "_Debug", debugBuffer);
         compute.SetInt("_DebugOn", debug ? 1 : 0);
         if (debug) debugBuffer.SetData(new uint[21]);
@@ -207,6 +225,41 @@ public class TSDFVolume : MonoBehaviour
         Version++;
 
         if (debug) RequestFuseDebug();
+    }
+
+    Matrix4x4 WorldToDepthMatrix()
+    {
+        return (useTrackingSpace && trackingSpace != null)
+            ? trackingSpace.worldToLocalMatrix
+            : Matrix4x4.identity;
+    }
+
+    // Projects a point 1 m straight ahead of the head into both depth images and reads the depth there.
+    void UpdateProbe()
+    {
+        if (!logStats || probePending || Time.time < nextProbeTime) return;
+        Transform h = head != null ? head : (Camera.main != null ? Camera.main.transform : null);
+        if (h == null || probeBuffer == null || !depth.BindToCompute(compute, kProbe)) return;
+
+        nextProbeTime = Time.time + statsInterval;
+        Vector3 p = h.position + h.forward;
+
+        compute.SetVector("_ProbeWorld", new Vector4(p.x, p.y, p.z, 1f));
+        compute.SetMatrix("_WorldToDepth", WorldToDepthMatrix());
+        compute.SetInt("_DepthSize", depth.DepthTexture.width);
+        compute.SetInt("_FlipY", flipY ? 1 : 0);
+        compute.SetBuffer(kProbe, "_ProbeOut", probeBuffer);
+        compute.Dispatch(kProbe, 1, 1, 1);
+
+        probePending = true;
+        AsyncGPUReadback.Request(probeBuffer, req =>
+        {
+            probePending = false;
+            if (req.hasError) return;
+            var d = req.GetData<float>();
+            for (int i = 0; i < LastProbe.Length; i++) LastProbe[i] = d[i];
+            HasProbe = true;
+        });
     }
 
     // ---- hand masking -------------------------------------------------------------------
