@@ -9,7 +9,7 @@ public class RoutineSender : MonoBehaviour
     [SerializeField] private Texture2D image;
     
     [Header("Server")]
-    [SerializeField] private string serverUrl = "http://172.20.10.3:8000/reconstruct";  // laptop IP, not localhost on Quest
+    [SerializeField] private string serverUrl;  // laptop IP, not localhost on Quest
     [SerializeField] private int mcResolution = 128;
     [SerializeField] private bool removeBackground = true;
     [SerializeField] private int timeoutSeconds = 120;
@@ -18,14 +18,29 @@ public class RoutineSender : MonoBehaviour
     [SerializeField] private string outputFileName = "bottle_fixed.glb";
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    /*
+    
     IEnumerator Start()
     {
         //image = Resources.Load<Texture2D>("Assets/bottle_fixed.png");
         yield return new WaitForSeconds(1f);
-        StartCoroutine(SendImage(image));
+        StartCoroutine(ServerDebugger());
     }
-    */
+    
+    public IEnumerator ServerDebugger()
+    {
+        string url = serverUrl + "/health";
+        
+        using (UnityWebRequest request = UnityWebRequest.Get(url))
+        {
+            request.timeout = timeoutSeconds;
+            yield return request.SendWebRequest();
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("Reconstruction failed: " + request.error);
+                yield break;
+            }
+        }
+    }
 
     public IEnumerator SendImage(Texture2D file)
     {
