@@ -411,9 +411,12 @@ MonoBehaviour:
   flipY: 1
   handRadius: 0.08
   fingertipRadius: 0.05
+  useTrackingSpace: 0
+  trackingSpace: {fileID: 0}
+  head: {fileID: 0}
   logStats: 1
   logToConsole: 0
-  statsInterval: 2
+  statsInterval: 0.5
 --- !u!4 &464127298
 Transform:
   m_ObjectHideFlags: 0

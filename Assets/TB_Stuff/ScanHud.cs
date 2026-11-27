@@ -99,6 +99,7 @@ public class ScanHud : MonoBehaviour
         sb.Append(label);
         if (volume != null) sb.Append("   frames ").Append(volume.Version);
         sb.Append('\n');
+        if (state == 1 && depth != null) sb.Append(depth.Status).Append('\n');
 
         if (volume != null && volume.LastTotalVoxels > 0)
         {

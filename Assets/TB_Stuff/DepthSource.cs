@@ -22,6 +22,7 @@ public class DepthSource : MonoBehaviour
     bool logged;
 
     public bool IsReady { get; private set; }
+    public string Status { get; private set; } = "off";   // why depth is or isn't ready, shown in the headset
     public Texture DepthTexture { get; private set; }          // two slices: left eye, right eye
     public Matrix4x4[] ReprojectionMatrices { get; } = new Matrix4x4[2];
     public Vector4 ZBufferParams { get; private set; }
@@ -42,6 +43,7 @@ public class DepthSource : MonoBehaviour
         {
             if (!EnvironmentDepthManager.IsSupported)
             {
+                Status = "NOT SUPPORTED on this device/build";
                 Debug.LogWarning("DepthSource: environment depth is not supported on this device/build.");
                 capturing = false;
                 return;
@@ -64,18 +66,24 @@ public class DepthSource : MonoBehaviour
 
     void Update()
     {
-        if (!capturing) { IsReady = false; return; }
+        if (!capturing) { IsReady = false; if (Status != "NOT SUPPORTED on this device/build") Status = "off"; return; }
         IsReady = false;
-        if (!manager.IsDepthAvailable) return;
+        if (!manager.IsDepthAvailable)
+        {
+            Status = "manager: no depth frame yet";
+            return;
+        }
 
         DepthTexture = Shader.GetGlobalTexture(DepthTexId);
         Shader.GetGlobalMatrixArray(ReprojId, matrixScratch);   // no per-frame allocation
         ZBufferParams = Shader.GetGlobalVector(ZBufferParamId);
 
-        if (DepthTexture == null || matrixScratch.Count < 2) return;
+        if (DepthTexture == null) { Status = "depth texture is null"; return; }
+        if (matrixScratch.Count < 2) { Status = "matrices missing (count " + matrixScratch.Count + ")"; return; }
         ReprojectionMatrices[0] = matrixScratch[0];
         ReprojectionMatrices[1] = matrixScratch[1];
         IsReady = true;
+        Status = "ready";
 
         if (logOnceWhenReady && !logged)
         {
