@@ -15,6 +15,8 @@ public class RoutineSender : MonoBehaviour
 
     [Header("Output")]
     [SerializeField] private string outputFileName = "bottle_fixed.glb";
+    
+    public static event System.Action<byte[]> ModelReady;
 
     private IEnumerator Start()
     {
@@ -89,6 +91,7 @@ public class RoutineSender : MonoBehaviour
             Debug.Log("[RoutineSender] Reconstruction succeeded: HTTP " + request.responseCode);
             byte[] glbBytes = request.downloadHandler.data;
             SaveGlb(glbBytes);
+            ModelReady?.Invoke(glbBytes);
         }
     }
 
