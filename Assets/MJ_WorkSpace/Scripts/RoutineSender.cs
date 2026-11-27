@@ -21,21 +21,30 @@ public class RoutineSender : MonoBehaviour
     
     IEnumerator Start()
     {
+        
+        Debug.Log("Starting routine sender");
         //image = Resources.Load<Texture2D>("Assets/bottle_fixed.png");
         yield return new WaitForSeconds(1f);
+        Debug.Log("Wait is over!");
         StartCoroutine(ServerDebugger());
     }
     
     public IEnumerator ServerDebugger()
     {
+        Debug.Log("Server Debugger started");
         string url = serverUrl + "/health";
         
+        Debug.Log("Sending request to " + url);
         using (UnityWebRequest request = UnityWebRequest.Get(url))
         {
+            Debug.Log("Inside using Unity Web request");
             request.timeout = timeoutSeconds;
+            Debug.Log("Request timeout set to " + timeoutSeconds);
             yield return request.SendWebRequest();
+            Debug.Log("Request sent");
             if (request.result != UnityWebRequest.Result.Success)
             {
+                Debug.LogError("Request failed");
                 Debug.LogError("Reconstruction failed: " + request.error);
                 yield break;
             }

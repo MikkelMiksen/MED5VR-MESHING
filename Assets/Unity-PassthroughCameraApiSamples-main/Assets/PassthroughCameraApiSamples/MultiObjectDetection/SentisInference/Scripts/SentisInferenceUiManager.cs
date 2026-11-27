@@ -17,6 +17,7 @@ namespace PassthroughCameraSamples.MultiObjectDetection
         [SerializeField] private PassthroughCameraAccess m_cameraAccess;
         [SerializeField] private PassThrough m_passThrough;
         //[SerializeField] private Camera m_cam;
+        private bool isPressed = false;
 
         [SerializeField] private RectTransform m_detectionBoxPrefab;
         [Space(10)]
@@ -48,6 +49,11 @@ namespace PassthroughCameraSamples.MultiObjectDetection
                     ReturnToPool(box);
                     m_boxDrawn.RemoveAt(i);
                 }
+            }
+
+            if (InputManager.IsButtonADownOrPinchStarted())
+            {
+                isPressed = true;
             }
         }
 
@@ -128,11 +134,12 @@ namespace PassthroughCameraSamples.MultiObjectDetection
                 boxRectTransform.SetPositionAndRotation(worldSpaceCenter, Quaternion.LookRotation(normal));
                 boxRectTransform.sizeDelta = size;
                 boxData.lastUpdateTime = Time.time;
-                //Debug.Log("Sentis ovr input" + InputManager.IsButtonADownOrPinchStarted());
-                if (InputManager.IsButtonADownOrPinchStarted())
+
+
+                if (isPressed)
                 {
-                    //Debug.Log("Has run sentis");
                     StartCoroutine(m_passThrough.TakeSnapshot(normRect, bottomRightLocal, topLeftLocal, center));
+                    isPressed = false;
                 }
 
 
